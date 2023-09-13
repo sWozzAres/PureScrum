@@ -1,0 +1,55 @@
+﻿@using System.ComponentModel.DataAnnotations;
+@inject HttpClient Http
+@inject ILogger<Login> Logger
+
+<h1>Login</h1>
+
+<EditForm Model="@this" OnValidSubmit="LoginAsync">
+    <div class="mb-3">
+        <label for="username">User Name</label>
+        <InputText id="username" @bind-Value="this.Username" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password">User Name</label>
+        <InputText type="password" id="password" @bind-Value="this.Password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+
+@code {
+    // see https://devblogs.microsoft.com/dotnet/asp-net-core-updates-in-dotnet-8-preview-4/#auth
+    // https://www.youtube.com/watch?v=saQjBorgsA4&t=55s
+
+    [Required]
+    public string Username { get; set; } = "markb";
+    [Required]
+    public string Password { get; set; } = "Pass123$";
+
+    async Task LoginAsync()
+    {
+       
+
+        var response = await Http.PostAsJsonAsync("/identity/login?cookieMode=true", new
+        {
+            Username,
+            Password
+        });
+
+        Logger.LogInformation("{@response}", response);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // var loginContent = await response.Content.ReadFromJsonAsync<JsonElement>();
+            // var accessToken = loginContent.GetProperty("access_token").GetString();
+
+            // Logger.LogInformation("access token: {at}", accessToken);
+
+            // Http.DefaultRequestHeaders.Authorization = new("Bearer", accessToken);
+
+            // Logger.LogInformation("requiresAuth: {a}", await Http.GetStringAsync("/requires-auth"));
+        }
+    }
+}

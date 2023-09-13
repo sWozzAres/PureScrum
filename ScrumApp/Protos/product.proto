@@ -1,0 +1,34 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "ScrumApi";
+
+package utopia.scrum;
+
+service ProductService {
+  rpc List (ListProductsRequest) returns (ListProductsResponse);
+  rpc Create(CreateRequest) returns (CreateResponse);
+}
+
+message CreateRequest{
+	string name = 1;
+	string vision = 2;
+}
+
+message CreateResponse{
+	string id = 1;
+	string name = 2;
+	string vision = 3;
+}
+
+message ListProductsRequest {
+}
+
+message ProductShort
+{
+	string id = 1;
+	string name = 2;
+}
+
+message ListProductsResponse {
+  repeated ProductShort products = 1;
+}

@@ -1,0 +1,79 @@
+﻿@inject HttpClient Http
+
+<EditFormTemplate TModel="UpdateSprintRequest" @ref="form" OnLoad="OnLoad" OnSave="OnSave">
+    <div class="row">
+        <div class="col-md-8 mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="status" class="form-label">Status</label>
+            <InputSelect id="status" class="form-select" @bind-Value="form.Model.Status">
+                <option value="None">None</option>
+                <option value="Ready">Ready</option>
+                <option value="Done">Done</option>
+            </InputSelect>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <InputTextAreaMarkdown @bind-Value="form.Model.SprintGoal" Label="Sprint Goal" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="started" class="form-label">Started</label>
+            @if (form.IsEditing)
+            {
+                <InputDate id="started" class="form-control" @bind-Value="form.Model.Started" />
+            }
+            else
+            {
+                <div id="started" class="form-control disabled">
+                    @if (form.Model.Started is not null)
+                    {
+                        <text>@form.Model.Started.Value.ToString("D")</text>
+                    }
+                    else
+                    {
+                        <text>&nbsp;</text>
+                    }
+                </div>
+            }
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="expected" class="form-label">Expected Delivery Date</label>
+            @if (form.IsEditing)
+            {
+                <InputDate id="expected" class="form-control" @bind-Value="form.Model.ExpectedDeliveryDate" />
+            }
+            else
+            {
+                <div for="expected" class="form-control disabled">
+                    @if (form.Model.ExpectedDeliveryDate is not null)
+                    {
+                        <text>@form.Model.ExpectedDeliveryDate.Value.ToString("D")</text>
+                    }
+                    else
+                    {
+                        <text>&nbsp;</text>
+                    }
+                </div>
+            }
+        </div>
+
+    </div>
+</EditFormTemplate>
+
+@code {
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateSprintRequest>.LoadModel OnLoad { get; set; } = null!;
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateSprintRequest>.SaveModel OnSave { get; set; } = null!;
+
+    EditFormTemplate<UpdateSprintRequest> form = null!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(OnLoad);
+        ArgumentNullException.ThrowIfNull(OnSave);
+    }
+}

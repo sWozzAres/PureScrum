@@ -1,0 +1,163 @@
+﻿@page "/productbacklogitem/matrix"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject ILogger<List> Logger
+@inject TabService TabService
+@inject ScrumApi.ProductBacklogItemService.ProductBacklogItemServiceClient Client
+
+<PageTitle>Dependency Matrix</PageTitle>
+
+<PageHeader Title="Product Backlog Items" Icon="@Icon.Dependency">
+    <SubHeaderContent><h2>Dependency Matrix</h2></SubHeaderContent>
+</PageHeader>
+
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Product Backlog Items failed to load.
+    </div>
+}
+else if (sortedItems is not null)
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-dependency-matrix">
+                            <thead>
+                                <tr class="dm-header-row">
+                                    <th></th>
+                                    @foreach (var pbi in sortedItems)
+                                    {
+                                        <th scope="row" class="dm-header-td">@pbi.Name</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in sortedItems)
+                                {
+
+                                    @* var className = circularDependencies.Any(c => c == item.Id) ? "table-danger" : ""; *@
+                                    @* var className = string.Join(" ",
+                                        circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                                        item.Status == ProductBacklogItemStatusDto.Done ? "strike" : "",
+                                    item.Missing ? "opaque" : ""); *@
+
+                                    var className = string.Join(" ",
+                                    circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                                    item.Status == ScrumApi.PbiStatus.Done ? "strike" : "",
+                                    item.WasMissing ? "opaque" : "");
+
+                                    <tr class="@className" @key="item">
+
+                                        @* <td><a href="/productbacklogitem/view/@item.Id">@item.Name</a></td> *@
+                                        <th scope="col">
+                                            <HyperLink href="@item.Url()" TabKey="@Pages.ProductBacklogItem.View.TabKey">@item.Name</HyperLink>
+                                        </th>
+
+                                        @foreach (var pbi in sortedItems)
+                                        {
+                                            <td>
+                                                @if (item.Id != pbi.Id)
+                                                {
+                                                    @if (IsDependant(item, pbi))
+                                                    {
+                                                        <button class="btn btn-light" @onclick="@(() => RemoveDependency(item, pbi))">
+                                                            <span class="bi bi-x-lg" aria-hidden="true"></span>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-light" @onclick="@(() => AddDependency(item, pbi))">
+                                                            <span class="bi bi-dash" aria-hidden="true" style="color: transparent"></span>
+                                                        </button>
+                                                    }
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    // List<ProductBacklogItemListDto> items = null!;
+    // List<ProductBacklogItemListDto> sortedItems = null!;
+    // List<Guid> circularDependencies = null!;
+    RepeatedField<ScrumApi.ProductBacklogItem> items = null!;
+    List<ScrumApi.ProductBacklogItem>? sortedItems;
+    List<string> circularDependencies { get; set; } = null!;
+
+    bool loadFailure;
+
+    async Task AddDependency(ScrumApi.ProductBacklogItem parent, ScrumApi.ProductBacklogItem child)
+    {
+        var result = await Http.PostAsJsonAsync($"/api/productbacklogitem/{parent.Id}/dependencies",
+            //new AddDependencyRequest() { ProductBacklogItemId = childId });
+            new List<string>() { child.Id });
+
+        if (result.IsSuccessStatusCode)
+        {
+            var p = items.Single(x => x.Id == parent.Id);
+
+            p.DependentOn.Add(new ScrumApi.ProductBacklogItemShort()
+            {
+                Id = child.Id,
+                Name = child.Name,
+                Status = child.Status
+            });
+
+            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            //await LoadAsync();
+        }
+    }
+    async Task RemoveDependency(ScrumApi.ProductBacklogItem parent, ScrumApi.ProductBacklogItem child)
+    {
+        var result = await Http.DeleteAsync($"/api/productbacklogitem/{parent.Id}/dependencies/{child.Id}");
+        if (result.IsSuccessStatusCode)
+        {
+            var p = items.Single(x => x.Id == parent.Id);
+            var c = p.DependentOn.Single(x => x.Id == child.Id);
+            p.DependentOn.Remove(c);
+
+            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            //await LoadAsync();
+        }
+    }
+    bool IsDependant(ScrumApi.ProductBacklogItem parent, ScrumApi.ProductBacklogItem child)
+        => parent.DependentOn.Any(p => p.Id == child.Id);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        try
+        {
+            // items = await Http.GetFromJsonAsync<List<ProductBacklogItemListDto>>("/api/productbacklogitem/open")
+            //     ?? throw new InvalidOperationException("Failed to load.");
+
+            // (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            items = (await Client.ListAsync(new ScrumApi.ListProductBacklogItemsRequest()
+                {
+                    Filter = $"ActiveOnly=true",
+                    IncludeDependsOn = true,
+                })).ProductBacklogItems;
+
+            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load product backlog items.");
+            loadFailure = true;
+        }
+    }
+}

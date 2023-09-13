@@ -1,0 +1,184 @@
+﻿@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject ILogger<ProductBacklog> Logger
+@inject TabService TabService
+@inject ScrumApi.ProductBacklogItemService.ProductBacklogItemServiceClient Client
+
+@{
+    var pageClassName = Visible ? "" : "hide";
+}
+<div class="@pageClassName">
+    @if (loadFailure)
+    {
+        <div class="alert alert-danger" role="alert">
+            Product Backlog Items failed to load.
+        </div>
+    }
+    else if (items is not null)
+    {
+        <div class="row mb-2">
+            <div class="d-flex flex-row">
+                <div class="flex-grow-1">
+                    <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+                </div>
+                <div class="flex-grow-0">
+                    <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@(isDeleting || (items is not null && !items.Any(x=>x.Checked)))">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="row" class="col-width-min"></th>
+                                <th scope="row">Name</th>
+                                <th scope="row">Product</th>
+                                <th scope="row">Sprint</th>
+                                <th scope="row">Estimation</th>
+                                <th scope="row">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in items!.OrderBy(x => x.Status).ThenBy(x => x.SprintName))
+                            {
+                                var className = item.WasMissing ? "opaque" : "";
+
+                                <tr  @key="item" class="@className">
+                                    <td><input type="checkbox" @bind-value="@item.Checked" /></td>
+                                    <th scope="col">
+                                        <HyperLink href="@item.Url()" TabKey="@Pages.ProductBacklogItem.View.TabKey">@item.Name</HyperLink>
+                                    </th>
+                                    <td>@item.ProductName</td>
+                                    <td>@item.SprintName</td>
+                                    <td>@item.EstimationPoints</td>
+                                    @{
+                                        var status = (ProductBacklogItemStatusDto)item.Status;
+                                        className = status switch
+                                        {
+                                            ProductBacklogItemStatusDto.None => "bg-primary bg-gradient",
+                                            ProductBacklogItemStatusDto.Ready => "bg-success bg-gradient",
+                                            ProductBacklogItemStatusDto.Done => "bg-dark bg-gradient",
+                                            _ => ""
+                                        };
+                                    }
+                                    <td><span class="badge @className">@status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    }
+
+    @if (deleteFailedMsg is not null)
+    {
+        <NotificationDialog OnClose="@(() => deleteFailedMsg = null)">
+            @deleteFailedMsg
+        </NotificationDialog>
+    }
+    @if (isCreating)
+    {
+        <CreateProductBacklogItem Id="@Id" OnClose="@((result) => isCreating = false)" OnCreated="Created" />
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+    [Parameter, EditorRequired] public bool Visible { get; set; }
+
+    RepeatedField<ScrumApi.ProductBacklogItem>? items;
+    bool loadFailure;
+    string? deleteFailedMsg;
+    bool isCreating;
+   
+    async Task Created(CreatedEventArgs<CreateProductBacklogItemRequest> e)
+    {
+        var result = await e.Response.Content.ReadFromJsonAsync<ProductBacklogItemFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+        if (e.Open)
+        {
+            TabService.ResetTabs(ScrumApp.Pages.ProductBacklogItem.View.TabKey);
+            Navigation.NavigateTo($"/productbacklogitem/view/{result.Id}");
+        }
+
+        items!.Add(new ScrumApi.ProductBacklogItem(
+            result.Id.ToString(),
+            e.Model.Name,
+            (int)ProductBacklogItemStatusDto.None,
+            result.SprintName ?? "",
+            result.ProductName,
+            0.0f
+        ));
+
+        isCreating = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+        ArgumentNullException.ThrowIfNull(Visible);
+    }
+
+    bool isDeleting;
+    async Task DeleteAsync()
+    {
+        isDeleting = true;
+        try
+        {
+            var idsToRemove = items!.Where(x => x.Checked).Select(x => x.Id);
+
+            var response = await ApiHelpers.DeleteIdsAsync(idsToRemove, Http, "/api/productbacklogitem");
+            if (response is PostResponse.Success)
+            {
+                items!.RemoveAll(items!.Where(x => idsToRemove.Contains(x.Id)));
+            }
+            else
+            {
+                deleteFailedMsg = response is PostResponse.BadRequest br
+                    ? br.ErrorMessage
+                    : "Delete failed!";
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Visible && items is null)
+        {
+            await LoadAsync(false);
+        }
+    }
+
+    async Task LoadAsync(bool forceLoad)
+    {
+        try
+        {
+            items = (await Client.ListAsync(new ScrumApi.ListProductBacklogItemsRequest()
+            {
+                Filter = $"ProductId={Id}",
+                IncludeDependsOn = true,
+                //IncludeSbis = true
+            })).ProductBacklogItems;
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load products backlog items.");
+            loadFailure = true;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering {fr}", firstRender);
+    }
+}

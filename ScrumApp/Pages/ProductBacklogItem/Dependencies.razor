@@ -1,0 +1,76 @@
+﻿@inject HttpClient Http
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="col mb-3">
+            <button type="submit" class="btn btn-primary" @onclick="@(() => isCreating = true)">Add</button>
+        </div>
+    </div>
+</div>
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Dto.Children)
+            {
+                <tr>
+                    <td class="w-100 align-middle">
+                        <HyperLink href="@item.Url()" TabKey="@Pages.ProductBacklogItem.View.TabKey">@item.Name</HyperLink>
+                    </td>
+                    <td class="align-middle">
+                        @item.Status
+                    </td>
+                    <td><button class="btn btn-light" @onclick="@(() => RemoveDependency(item.Id))">Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (isCreating)
+{
+    <CreateDependency Dto="@Dto" OnClose="@((result) => isCreating = false)"
+        OnCreated="Created" />
+}
+@code {
+    [Parameter, EditorRequired]public Guid Id { get; set; }
+    [Parameter, EditorRequired] public EventCallback LoadDto { get; set; }
+    public record PbiShort(Guid Id, string Name);
+    //[Parameter, EditorRequired] public List<PbiShort> Pbis { get; set; } = null!;
+    [Parameter, EditorRequired] public ProductBacklogItemFullDto Dto { get; set; } = null!;
+
+    bool isCreating;
+    async Task Created()
+    {
+        await LoadDto.InvokeAsync();
+        isCreating = false;
+    }
+
+    //AddDependencyRequest dependencyModel = new();
+
+    // async Task AddDependency()
+    // {
+    //     var result = await Http.PostAsJsonAsync($"/api/productbacklogitem/{Id}/dependencies", dependencyModel);
+    //     if (result.IsSuccessStatusCode)
+    //     {
+    //         dependencyModel.ProductBacklogItemId = null;
+    //         await LoadDto.InvokeAsync();
+    //     }
+    // }
+    async Task RemoveDependency(Guid id)
+    {
+        var result = await Http.DeleteAsync($"/api/productbacklogitem/{Id}/dependencies/{id}");
+        if (result.IsSuccessStatusCode)
+        {
+            //dependencyModel.ProductBacklogItemId = null;
+
+            await LoadDto.InvokeAsync();
+        }
+    }
+}

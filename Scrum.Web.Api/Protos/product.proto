@@ -1,0 +1,46 @@
+﻿syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option csharp_namespace = "ScrumApi";
+
+package utopia.scrum;
+
+service ProductService {
+  rpc List (ListProductsRequest) returns (ListProductsResponse)
+  {
+	  option (google.api.http) = {
+		get: "/product/list"
+    };
+  };
+  rpc Create(CreateRequest) returns (CreateResponse)
+  {
+	  option (google.api.http) = {
+		post: "/product"
+    };
+  };
+}
+
+message CreateRequest{
+	string name = 1;
+	string vision = 2;
+}
+
+message CreateResponse{
+	string id = 1;
+	string name = 2;
+	string vision = 3;
+}
+
+message ListProductsRequest {
+}
+
+message ProductShort
+{
+	string id = 1;
+	string name = 2;
+}
+
+message ListProductsResponse {
+  repeated ProductShort products = 1;
+}

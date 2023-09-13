@@ -1,0 +1,44 @@
+﻿@using System.Globalization;
+@inject NavigationManager NavigationManager
+@inject TabService TabService
+
+<a @attributes="AdditionalAttributes"
+    @onclick="Navigate"
+    @onclick:preventDefault="true"
+    @onclick:stopPropagation="true">
+    @ChildContent
+</a>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    [Parameter, EditorRequired] public string TabKey { get; set; } = null!;
+    
+    string? href;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(TabKey);
+        ArgumentNullException.ThrowIfNull(ChildContent);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (AdditionalAttributes is not null && AdditionalAttributes.TryGetValue("href", out var obj))
+        {
+            href = Convert.ToString(obj, CultureInfo.InvariantCulture);
+        }
+    }
+    void Navigate()
+    {
+        if(href is not null)
+        {
+            TabService.ResetTabs(TabKey);
+            NavigationManager.NavigateTo(href);
+        }
+
+    }
+}

@@ -1,0 +1,121 @@
+﻿@page "/product/view/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject TabService TabService
+@inject ILogger<View> Logger
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Product" Icon="@Icon.Product" ClassName="bi-product">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="row">
+        <div class="col-12">
+            <Tabs2 @bind-Selected="tabPage" Key="@TabKey" Info="tabInfo" />
+        </div>
+    </div>
+   @*  <button @onclick="Render">Render</button> *@
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-top-0 no-br-top">
+                <div class="card-body">
+                    <Details OnLoad="Load" OnSave="SaveAsync" Visible="(tabPage == TabPage.Details)" />
+                    <ProductBacklog Id="@dto.Id" Visible="@(tabPage == TabPage.ProductBacklog)" />
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    public static string TabKey = "Product_View";
+    public enum TabPage { Details, ProductBacklog }
+    TabPage tabPage = TabPage.Details;
+    Dictionary<TabPage, TabInfo> tabInfo = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateProductRequest model)
+    {
+        var response = await Http.PostAsJsonAsync($"/api/product/{Id}", model);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            dto = await response.Content.ReadFromJsonAsync<ProductFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response;
+    }
+
+    UpdateProductRequest Load()
+        => new(dto!.Name, dto.Vision);
+
+    ProductFullDto dto = null!;
+    string? loadErrorMessage;
+    async Task LoadAsync()
+    {
+        dto = null!;
+        //_productBacklog = null;
+        try
+        {
+            var response = await Http.GetAsync($"/api/product/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<ProductFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                // dto = await Http.GetFromJsonAsync<ProductFullDto>($"/api/product/{Id}")
+                // ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                tabInfo = new()
+                {
+                    { TabPage.ProductBacklog, new(IconHelper.ClassName[Icon.PBI]) },
+                    { TabPage.Details, new(IconHelper.ClassName[Icon.Details])},
+                };
+            }
+        }
+        catch (Exception)
+        {
+            loadErrorMessage = "Failed to load Product";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _ = TabService.TryGetValue<TabPage>(TabKey, out tabPage);
+        //Logger.LogInformation("Id {id}", Id);
+        await LoadAsync();
+    }
+
+    // void Render()
+    // {
+
+    // }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering {fr}", firstRender);
+    }
+}

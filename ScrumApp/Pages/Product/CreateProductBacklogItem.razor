@@ -1,0 +1,35 @@
+﻿@inject HttpClient Http
+
+<CreateFormTemplateDialog @ref="form"
+                          OnSave="SaveAsync" OnGetCreateModel="this.GetCreateModel"
+                          OnCreated="OnCreated" OnClose="OnClose" Title="Create Product Backlog Item">
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="descr" class="form-label">Description</label>
+        <InputTextArea id="descr" class="form-control" @bind-Value="form.Model.Description" rows="5" placeholder="What, who and why?" />
+    </div>
+</CreateFormTemplateDialog>
+
+
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateProductBacklogItemRequest>> OnCreated { get; set; }
+
+    CreateProductBacklogItemRequest GetCreateModel() => new() { ProductId = Id };
+
+    CreateFormTemplateDialog<CreateProductBacklogItemRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(CreateProductBacklogItemRequest model)
+       => await Http.PostAsJsonAsync("/api/productbacklogitem", model);
+
+    protected override void OnInitialized()
+    {
+        if (Id == Guid.Empty) throw new ArgumentNullException(nameof(Id));
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+    }
+}

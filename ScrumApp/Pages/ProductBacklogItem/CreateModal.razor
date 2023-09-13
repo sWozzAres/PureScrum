@@ -1,0 +1,49 @@
+﻿@inject HttpClient Http
+
+@if (products is not null)
+{
+    <CreateFormTemplateDialog @ref="form" 
+                              OnSave="SaveAsync" OnGetCreateModel="this.OnGetCreateModel"
+                              OnCreated="OnCreated" OnClose="OnClose" Title="Create Product Backlog Item">
+        <div class="mb-3">
+            <label for="product" class="form-label">Product</label>
+            <InputSelect id="product" class="form-select" @bind-Value="form.Model.ProductId">
+                <option selected>Select a product...</option>
+                @foreach (var product in products)
+                {
+                    <option value="@product.Id">@product.Name</option>
+                }
+            </InputSelect>
+
+        </div>
+
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+
+            <label for="descr" class="form-label">Description</label>
+            <InputTextArea id="descr" class="form-control" @bind-Value="form.Model.Description" rows="5" placeholder="What, who and why?" />
+        </div>
+    </CreateFormTemplateDialog>
+}
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateProductBacklogItemRequest>> OnCreated { get; set; }
+    [Parameter] public CreateFormTemplateDialog<CreateProductBacklogItemRequest>.GetCreateModel? OnGetCreateModel { get; set; }
+
+    CreateFormTemplateDialog<CreateProductBacklogItemRequest> form = null!;
+    ProductListDto[]? products;
+
+    async Task<HttpResponseMessage> SaveAsync(CreateProductBacklogItemRequest model)
+       => await Http.PostAsJsonAsync("/api/productbacklogitem", model);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+
+        products = await Http.GetFromJsonAsync<ProductListDto[]>("/api/product")
+           ?? throw new InvalidOperationException("Failed to load.");
+    }
+}

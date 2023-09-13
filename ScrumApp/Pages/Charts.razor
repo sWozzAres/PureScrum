@@ -1,0 +1,56 @@
+﻿@page "/charts"
+@using ScrumApp.Charts
+@inject HttpClient Http
+
+<div class="row">
+    <div class="col-6">
+        <div class="card">
+            <div class="card-body">
+                @if (SprintPBIsChart is not null)
+                {
+                    <h3>PBIs by Sprint</h3>
+                    <ChartJs width="200" height="500" Data="SprintPBIsChart" />
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    Chart SprintPBIsChart { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Http.GetFromJsonAsync<List<SprintPBIs>>("/api/data/sprintpbis")
+            ?? throw new InvalidOperationException("Failed to load chart data.");
+
+        SprintPBIsChart = new Chart()
+            {
+                Type = "doughnut",
+                Data = new ChartData()
+                {
+                    Labels = response.Select(x => x.Name).ToArray(),
+                    Datasets = new ChartData.DataSets[] {
+                        new ChartData.DataSets()
+                        {
+                            Label = "PBIs All",
+                            Data = response.Select(x => Convert.ToDouble(x.Count)).ToArray(),
+                            HoverOffset = 4
+                        },
+                        new ChartData.DataSets()
+                        {
+                            Label = "PBIs Active",
+                            Data = response.Select(x => Convert.ToDouble(x.ActiveCount)).ToArray(),
+                            HoverOffset = 4
+                        }
+                    }
+                },
+                //Options = null
+                Options = new ChartOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = false
+                }
+            };
+    }
+}

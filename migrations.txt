@@ -1,0 +1,20 @@
+add-migration -Name Initial37 -o Domain\Infrastructure\ScrumDb -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
+update-database -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
+remove-migration -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
+
+
+add-migration -Name Initial -o Infrastructure\SecurityDb -Context SecurityDbContext -Project Scrum.Web.Api -StartupProject Scrum.Web.Api
+update-database -Context SecurityDbContext -Project Scrum.Web.Api -StartupProject Scrum.Web.Api
+
+
+add-migration -Name Initial -o Infrastructure\SecurityDb -Context SecurityDbContext -Project Scrum.Server -StartupProject Scrum.Server
+update-database -Context SecurityDbContext -Project Scrum.Server -StartupProject Scrum.Server
+
+
+System Versioning
+-----------------
+ALTER TABLE [dbo].[ProductBacklogItems]
+SET (SYSTEM_VERSIONING = OFF);
+
+ALTER TABLE [dbo].[ProductBacklogItems]
+SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.ProductBacklogItemsHistory));

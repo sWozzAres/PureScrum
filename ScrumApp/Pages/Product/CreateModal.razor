@@ -1,0 +1,35 @@
+﻿@inject HttpClient Http
+
+<CreateFormTemplateDialog @ref="form" 
+                          OnSave="SaveAsync" OnGetCreateModel="this.OnLoad"
+                          OnCreated="OnCreated" OnClose="OnClose" Title="Create Product">
+
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Model.Name"  />
+    </div>
+
+    <div class="mb-3">
+        <InputTextAreaMarkdown @bind-Value="form.Model.Vision" Label="Vision"/>
+    </div>
+
+
+</CreateFormTemplateDialog>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateProductRequest>> OnCreated { get; set; }
+    [Parameter] public CreateFormTemplateDialog<CreateProductRequest>.GetCreateModel? OnLoad { get; set; }
+
+    CreateFormTemplateDialog<CreateProductRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(CreateProductRequest model)
+       => await Http.PostAsJsonAsync("/api/product", model);
+
+    protected override void OnInitialized()
+    {
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+    }
+}

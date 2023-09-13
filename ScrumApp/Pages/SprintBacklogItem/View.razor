@@ -1,0 +1,193 @@
+﻿@page "/sprintbacklogitem/view/{Id:guid}"
+@using Markdig;
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Sprint Backlog Item" Icon="@Icon.SBI" ClassName="bi-sbi">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    @* <li class="breadcrumb-item">
+                <HyperLink href="@dto.ProductUrl()"
+                TabKey="@Scrum.Web.Blazor.Pages.Product.View.TabKey">@dto.ProductName</HyperLink>
+                </li> *@
+                    @if (dto.SprintName is not null)
+                    {
+                        <li class="breadcrumb-item">
+                            <HyperLink href="@dto.SprintUrl()"
+                                       TabKey="@ScrumApp.Pages.Sprint.View.TabKey">@dto.SprintName</HyperLink>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="breadcrumb-item">
+                            ---
+                        </li>
+                    }
+                    <li class="breadcrumb-item">
+                        <HyperLink href="@dto.ProductBacklogItemUrl()"
+                                   TabKey="@ScrumApp.Pages.ProductBacklogItem.View.TabKey">@dto.ProductBacklogItemName</HyperLink>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="card">
+        <div class="card-body">
+            <EditFormTemplate @ref="form" OnLoad="Load" OnSave="SaveAsync" OnBeginEdit="BeginEditAsync">
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="pbi" class="form-label">Product Backlog Item</label>
+                        @if (form.IsEditing)
+                        {
+                            <InputSelect id="pbi" class="form-select" @bind-Value="form.Model.ProductBacklogItemId">
+                                <option selected>Select a PBI...</option>
+                                @foreach (var pbi in productBacklogItems!)
+                            {
+                                <option value="@pbi.Id">@pbi.Name</option>
+                            }
+                        </InputSelect>
+                        }
+                        else
+                        {
+                            <div class="form-control disabled">
+                                <HyperLink href="@dto.ProductBacklogItemUrl()" TabKey="@ScrumApp.Pages.ProductBacklogItem.View.TabKey">
+                                    @dto.ProductBacklogItemName
+                                </HyperLink>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+                </div>
+                <div class="col-12 mb-3">
+                    <InputTextAreaMarkdown @bind-Value="form.Model.Description" Label="Description" />
+
+                    @* <label for="descr" class="form-label">Description</label>
+                @if (form.IsEditing)
+                {
+                <InputTextArea id="descr" class="form-control text-area" @bind-Value="form.Model.Description" />
+                }
+                else
+                {
+                <div class="form-control text-area overflowy disabled">
+                @((MarkupString)Markdown.ToHtml(form.Model.Description ?? ""))
+                </div>
+                } *@
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="estdays" class="form-label">Estimation Points</label>
+                        <InputNumber id="estdays" class="form-control" @bind-Value="form.Model.EstimationPoints" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <InputSelect id="status" class="form-select" @bind-Value="form.Model.Status">
+                            @foreach (var status in Enum.GetValues<SprintBacklogItemStatusDto>())
+                            {
+                                <option value="@status">@status.ToDisplayString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                    <InputTextAreaMarkdown @bind-Value="form.Model.Notes" Label="Notes" />
+                    @* <label for="notes" class="form-label">Notes</label>
+                <InputTextArea id="notes" class="form-control" @bind-Value="form.Model.Notes" rows="5" /> *@
+                </div>
+            </EditFormTemplate>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    EditFormTemplate<UpdateSprintBacklogItemRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateSprintBacklogItemRequest model)
+    {
+        var response = await Http.PostAsJsonAsync($"/api/sprintbacklogitem/{Id}", model);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            dto = await response.Content.ReadFromJsonAsync<SprintBacklogItemFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response;
+    }
+
+    UpdateSprintBacklogItemRequest Load()
+        => new(dto.ProductBacklogItemId, dto.Status, dto.Name, dto.Description, dto.Notes, dto.EstimationPoints);
+
+    async Task<bool> BeginEditAsync()
+    {
+        if (productBacklogItems is not null)
+            return true;
+
+        try
+        {
+            productBacklogItems = await Http.GetFromJsonAsync<ProductBacklogItemListDto[]>("/api/productbacklogitem");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    string? loadErrorMessage;
+    SprintBacklogItemFullDto dto = null!;
+    ProductBacklogItemListDto[]? productBacklogItems;
+    async Task LoadAsync()
+    {
+        dto = null!;
+        productBacklogItems = null!;
+        try
+        {
+            var response = await Http.GetAsync($"/api/sprintbacklogitem/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<SprintBacklogItemFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                // dto = await Http.GetFromJsonAsync<SprintBacklogItemFullDto>($"/api/sprintbacklogitem/{Id}")
+                //     ?? throw new InvalidOperationException("Failed to load.");
+            }
+        }
+        catch
+        {
+            loadErrorMessage = "Failed to load Sprint Backlog Item";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+}

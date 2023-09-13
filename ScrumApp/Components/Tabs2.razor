@@ -1,0 +1,59 @@
+﻿@typeparam TEnum where TEnum : struct, System.Enum
+@inject TabService TabService
+@inject NavigationManager NavigationManager
+@inject ILogger<Tabs2<TEnum>> Logger
+<ul class="nav nav-tabs">
+    @foreach (var e in Enum.GetValues<TEnum>())
+    {
+        <li class="nav-item">
+
+            <a class="@TabClass(e)"
+            @onclick="@(() => UpdateSelectedTab(e))"
+            @onclick:preventDefault
+            @onclick:stopPropagation href="#">
+                @{
+                    var info = Info.GetValueOrDefault(e);
+
+                    if (info is not null)
+                    {
+                        <span class="bi @info.Icon" aria-hidden="true"></span>
+                    }
+                }
+                @e.ToDisplayString()
+                @if (info?.Extra is not null)
+                {
+                    <span>@info.Extra</span>
+                }
+            </a>
+        </li>
+    }
+</ul>
+@code {
+    [Parameter] public TEnum Selected { get; set; }
+    [Parameter] public EventCallback<TEnum> SelectedChanged { get; set; }
+    [Parameter, EditorRequired] public string? Key { get; set; }
+    [Parameter, EditorRequired] public Dictionary<TEnum, TabInfo> Info { get; set; } = null!;
+
+    string TabClass(TEnum t) => EqualityComparer<TEnum>.Default.Equals(Selected, t)
+        ? "nav-link active"
+        : "nav-link";
+
+    async Task UpdateSelectedTab(TEnum value)
+    {
+        if (EqualityComparer<TEnum>.Default.Equals(Selected, value))
+            return;
+
+        await SelectedChanged.InvokeAsync(value);
+
+        //Logger.LogInformation("Remembering tab {a} {b}", Key, Convert.ToInt32(value));
+
+        if (Key is not null)
+            TabService.RememberTab(Key, Convert.ToInt32(value));
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Info);
+        ArgumentNullException.ThrowIfNull(Key);
+    }
+}

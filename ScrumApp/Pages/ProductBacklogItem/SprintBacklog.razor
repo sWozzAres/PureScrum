@@ -1,0 +1,106 @@
+﻿@inject NavigationManager Navigation
+
+<div class="row mb-2">
+    <div class="col-sm-5">
+        <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+    </div>
+    <div class="col-sm-7">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="row"></th>
+                <th scope="row">Name</th>
+                <th scope="row">Estimation</th>
+                <th scope="row">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in dto.SprintBacklogItems)
+            {
+                var className = "";
+                //string.Join(" ", item.Status == SprintBacklogItemStatusDto.Done ? "strike" : "");
+                
+                <tr class="@className">
+                    @{
+                        var iconClass = openIds[item.Id]
+                        ? IconHelper.ClassName[Icon.Dash]
+                        : IconHelper.ClassName[Icon.Plus];
+                    }
+
+                    <td class="col-width-min">
+                        <span class="bi @iconClass text-center" aria-hidden="true"
+                        @onclick="@(() => openIds[item.Id] = !openIds[item.Id])" />
+                    </td>
+
+                    <th scope="col"><a href="/sprintbacklogitem/view/@item.Id">@item.Name</a></th>
+                    <td>@item.EstimationPoints</td>
+                    @{
+                        className = item.Status switch
+                        {
+                            SprintBacklogItemStatusDto.ToDo => "bg-primary bg-gradient",
+                            SprintBacklogItemStatusDto.InProgress => "bg-success bg-gradient",
+                            SprintBacklogItemStatusDto.Done => "bg-dark bg-gradient",
+                            _ => ""
+                        };
+                    }
+                    <td><span class="badge @className">@item.Status.ToDisplayString()</span></td>
+                </tr>
+                @if (openIds[item.Id])
+                {
+                    <tr>
+                        <td class="bg-light"></td>
+                        <td class="bg-light markdown" colspan="3">@((MarkupString)Markdown.ToHtml(item.Description))</td>
+                    </tr>
+                }
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td>@dto.SprintBacklogItems.Sum(x=>x.EstimationPoints) Total</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+@if (isCreating)
+{
+    <ScrumApp.Pages.SprintBacklogItem.CreateModal OnClose="@((result) => isCreating = false)"
+                                                          OnCreated="Created" OnLoad="@(() => new() { ProductBacklogItemId = dto.Id })" />
+}
+
+@code {
+    [Parameter, EditorRequired] public ProductBacklogItemFullDto dto { get; set; } = null!;
+    [Parameter, EditorRequired] public Dictionary<Guid, bool> openIds { get; set; } = null!;
+    [Parameter, EditorRequired]public EventCallback OnLoad { get; set; }
+
+    bool isCreating;
+    async Task Created(CreatedEventArgs<CreateSprintBacklogItemRequest> e)
+    {
+        if (e.Open)
+        {
+            var result = await e.Response.Content.ReadFromJsonAsync<ResponseWithId>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            //TabService.ResetTab(Scrum.Web.Blazor.Pages.SprintBacklogItem.View.TabKey);
+            Navigation.NavigateTo($"/sprintbacklogitem/view/{result.Id}");
+        }
+
+        await OnLoad.InvokeAsync();
+
+        isCreating = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(dto);
+        ArgumentNullException.ThrowIfNull(openIds);
+        if (!OnLoad.HasDelegate) throw new ArgumentNullException(nameof(OnLoad));
+    }
+}

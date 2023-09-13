@@ -1,0 +1,38 @@
+﻿<div class="row stick-header mb-1">
+    <div class="col-12">
+        <header class="d-flex flex-row align-items-center justify-content-middle page-header gap-2">
+            @if(Icon is not null)
+            {
+                <span class="bi ic @IconHelper.ClassName[Icon!.Value] text-center @ClassName" aria-hidden="true"></span>
+            }
+            <div class="d-flex flex-column flex-grow-1">
+                <h1 class="mb-0">@Title</h1>
+                @if (SubHeaderContent is not null)
+                {
+                    @SubHeaderContent
+                }
+            </div>
+            @if(ChildContent is not null)
+            {
+                <div class="">
+                @ChildContent
+                </div>
+            }
+        </header>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = null!;
+    //[Parameter] public string? SubHeader { get; set; } = null!;
+    [Parameter, EditorRequired] public Icon? Icon { get; set; } = null!;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? SubHeaderContent { get; set; }
+    [Parameter] public string? ClassName { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Title);
+        ArgumentNullException.ThrowIfNull(Icon);
+    }
+}

@@ -1,0 +1,173 @@
+﻿@page "/productbacklogitem/view/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject TabService TabService
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Product Backlog Item" Icon="@Icon.PBI" ClassName="bi-pbi">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    @if (dto.SprintName is not null)
+                    {
+                        <li class="breadcrumb-item">
+                            <HyperLink href="@dto.SprintUrl()"
+                                       TabKey="@ScrumApp.Pages.Sprint.View.TabKey">@dto.SprintName</HyperLink>
+                        </li>
+                    }
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="row">
+        <div class="col-12">
+            <Tabs2 @bind-Selected="tabPage" Key="@TabKey" Info="tabInfo" />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card no-br-top border-top-0">
+                <div class="card-body">
+                    @if (tabPage == TabPage.Details)
+                    {
+                        <ScrumApp.Pages.ProductBacklogItem.Details OnLoad="Load" OnSave="SaveAsync" Dto="@dto" />
+                    }
+                    else if (tabPage == TabPage.Dependencies)
+                    {
+                        <Dependencies Id="@Id" LoadDto="@LoadAsync" Dto="dto" />
+                    }
+                    else if (tabPage == TabPage.SprintBacklog)
+                    {
+                        <SprintBacklog dto="@dto" openIds="@openIds" OnLoad="@LoadAsync" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    EditFormTemplate<UpdateProductBacklogItemRequest> form = null!;
+
+    enum TabPage { Details, Dependencies, SprintBacklog }
+    Dictionary<TabPage, TabInfo> tabInfo = null!;
+
+    TabPage tabPage = TabPage.Details;
+    public static string TabKey = "ProductBacklogItem_View";
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateProductBacklogItemRequest model)
+    {
+        var response = await Http.PostAsJsonAsync($"/api/productbacklogitem/{Id}", model);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            dto = await response.Content.ReadFromJsonAsync<ProductBacklogItemFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response;
+    }
+
+    UpdateProductBacklogItemRequest Load()
+        => new(dto.ProductId, dto.Status, dto.Name, dto.Description, dto.EstimationPoints, dto.Notes,
+            dto.DeliveryDate, dto.IsFixedDeliveryDate, dto.Value, dto.Roi, dto.SprintId);
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    Guid previousId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _ = TabService.TryGetValue<TabPage>(TabKey, out tabPage);
+
+        if (Id != previousId)
+        {
+            previousId = Id;
+            await LoadAsync();
+            if (dto is not null && form is not null)
+                form.InitializeModel();
+        }
+    }
+
+    // async Task LoadDto()
+    // {
+
+    //     //items = await Http.GetFromJsonAsync<SprintBacklogItemListDto[]>($"/api/sprintbacklogitem?pbi={Id}");
+    //     productBacklogItems = await Http.GetFromJsonAsync<List<ProductBacklogItemListDto>>("/api/productbacklogitem")
+    //         ?? throw new InvalidOperationException("Failed to load product backlog items.");
+
+    //     pbis = productBacklogItems.Select(p => new Dependencies.PbiShort(p.Id, p.Name)).ToList();
+
+    //     await LoadAsync();
+
+    //     // remove from pbis where children has id
+    //     var c = dto.Children.Select(c => c.Id);
+    //     pbis.RemoveAll(x => c.Contains(x.Id));
+
+    //     tabInfo = new()
+    //     {
+    //         { TabPage.SprintBacklog, new(IconHelper.ClassName[Icon.SBI], $" ( {dto.SprintBacklogItems.Count().ToString()} )") },
+    //         { TabPage.Details, new(IconHelper.ClassName[Icon.Details])},
+    //         { TabPage.Dependencies, new(IconHelper.ClassName[Icon.Dependency], $" ( {dto.Children.Count().ToString()} )") }
+    //     };
+    // }
+
+    string? loadErrorMessage;
+    ProductBacklogItemFullDto dto = null!;
+    Dictionary<Guid, bool> openIds = null!;
+    async Task LoadAsync()
+    {
+        dto = null!;
+        try
+        {
+            var response = await Http.GetAsync($"/api/productbacklogitem/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<ProductBacklogItemFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                openIds = dto.SprintBacklogItems.ToDictionary(x => x.Id, _ => false);
+
+                // //items = await Http.GetFromJsonAsync<SprintBacklogItemListDto[]>($"/api/sprintbacklogitem?pbi={Id}");
+                // productBacklogItems = await Http.GetFromJsonAsync<List<ProductBacklogItemListDto>>("/api/productbacklogitem")
+                //     ?? throw new InvalidOperationException("Failed to load product backlog items.");
+
+                // pbis = productBacklogItems.Select(p => new Dependencies.PbiShort(p.Id, p.Name)).ToList();
+
+                // // remove from pbis where children has id
+                // var c = dto.Children.Select(c => c.Id);
+                // pbis.RemoveAll(x => c.Contains(x.Id));
+
+                tabInfo = new()
+                {
+                    { TabPage.SprintBacklog, new(IconHelper.ClassName[Icon.SBI], $" ( {dto.SprintBacklogItems.Count().ToString()} )") },
+                    { TabPage.Details, new(IconHelper.ClassName[Icon.Details])},
+                    { TabPage.Dependencies, new(IconHelper.ClassName[Icon.Dependency], $" ( {dto.Children.Count().ToString()} )") }
+                };
+            }
+        }
+        catch
+        {
+            loadErrorMessage = "Failed to load Product Backlog Item";
+        }
+    }
+}

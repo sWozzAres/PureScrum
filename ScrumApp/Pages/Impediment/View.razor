@@ -1,0 +1,104 @@
+﻿@page "/impediment/view/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Impediment" Icon="@Icon.Impediment" ClassName="bi-impediment">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="card">
+        <div class="card-body">
+            <EditFormTemplate @ref="form" OnLoad="Load" OnSave="SaveAsync">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+                </div>
+                <div class="mb-3">
+                    <InputTextAreaMarkdown @bind-Value="form.Model.Description" Label="Description" />
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="severity" class="form-label">Severity</label>
+                        <InputNumber id="severity" class="form-control" @bind-Value="form.Model.Severity" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="value" class="form-label">Value</label>
+                        <InputNumber id="value" class="form-control" @bind-Value="form.Model.Value" />
+                    </div>
+                </div>
+            </EditFormTemplate>
+        </div>
+    </div>
+}
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    EditFormTemplate<UpdateImpedimentRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateImpedimentRequest model)
+    {
+        var response = await Http.PostAsJsonAsync($"/api/impediment/{Id}", model);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            dto = await response.Content.ReadFromJsonAsync<ImpedimentFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response;
+    }
+
+    UpdateImpedimentRequest Load()
+        => new(dto.Name, dto.Description, dto.Severity, dto.Value);
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    string? loadErrorMessage;
+    ImpedimentFullDto dto = null!;
+    async Task LoadAsync()
+    {
+        dto = null!;
+        try
+        {
+            var response = await Http.GetAsync($"/api/impediment/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<ImpedimentFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                // dto = await Http.GetFromJsonAsync<ImpedimentFullDto>($"/api/impediment/{Id}")
+                //     ?? throw new InvalidOperationException("Failed to load.");
+            }
+        }
+        catch
+        {
+            loadErrorMessage = "Failed to load Impediment";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+}

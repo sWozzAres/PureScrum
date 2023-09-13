@@ -1,0 +1,45 @@
+﻿@inject IJSRuntime JS
+@inject ILogger<ContentEditable> Logger
+
+<p contenteditable="plaintext-only" @onfocus="OnFocus" @onblur="OnBlur" @ref="elementRef">
+    @if (editing)
+    {
+        @content
+    }
+    else 
+    {
+        @((MarkupString)Markdown.ToHtml(content))
+    }
+</p>
+
+@code {
+    [Parameter, EditorRequired] public string Content { get; set; } = null!;
+
+    ElementReference? elementRef;
+
+    string content = null!;
+    bool editing;
+
+    async Task OnBlur()
+    {
+        editing = false;
+
+        content = await JS.InvokeAsync<string>("getElementContent", elementRef);
+        Logger.LogInformation("content: {c}", content);
+    }
+
+    void OnFocus()
+    {
+        editing = true;    
+    }
+
+    protected override void OnParametersSet()
+    {
+        content = Content;
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Content);
+    }
+}

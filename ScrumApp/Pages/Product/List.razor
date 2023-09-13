@@ -1,0 +1,140 @@
+﻿@page "/product/list"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject ILogger<List> Logger
+@inject TabService TabService
+@inject ScrumApi.ProductService.ProductServiceClient Client
+
+<PageTitle>Products</PageTitle>
+
+<PageHeader Title="Products" Icon="@Icon.Product" ClassName="bi-product">
+    <SubHeaderContent><h2>List</h2></SubHeaderContent>
+    <ChildContent>
+        <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@(isDeleting || (products is not null && !products.Any(x=>x.Checked)))">Delete</button>
+    </ChildContent>
+</PageHeader>
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Products failed to load.
+    </div>
+}
+else if (products is not null)
+{
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="row" class="col-width-min"></th>
+                            <th scope="row">Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in products.OrderBy(p => p.Name))
+                        {
+                            <tr @key="product">
+                                <td><input type="checkbox" @bind-value="@product.Checked" /></td>
+                                <th scope="col">
+                                    <HyperLink href="@product.Url()" TabKey="@Product.View.TabKey">@product.Name</HyperLink>
+                                </th>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+@if (deleteFailedMsg is not null)
+{
+    <NotificationDialog OnClose="@(() => deleteFailedMsg = null)">
+        @deleteFailedMsg
+    </NotificationDialog>
+}
+@if (isCreating)
+{
+    <CreateModal OnClose="@((result) => isCreating = false)" OnCreated="Created" />
+}
+
+@code {
+    RepeatedField<ScrumApi.ProductShort>? products;
+
+    string? deleteFailedMsg;
+    bool loadFailure;
+
+    bool isCreating;
+    async Task Created(CreatedEventArgs<CreateProductRequest> e)
+    {
+        var result = await e.Response.Content.ReadFromJsonAsync<ProductShortDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+        if (e.Open)
+        {
+            TabService.ResetTabs(ScrumApp.Pages.Product.View.TabKey);
+            Navigation.NavigateTo($"/product/view/{result.Id}");
+        }
+
+        products!.Add(new ScrumApi.ProductShort(result.Id.ToString(), e.Model.Name));
+
+        isCreating = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        try
+        {
+            products = (await Client.ListAsync(new ScrumApi.ListProductsRequest())).Products;
+        }
+        // catch (Grpc.Core.RpcException rex)
+        // {
+        //     Logger.LogCritical(rex.Status.DebugException, "Failed to load products over RPC. {m}", rex.Status.DebugException.Message);
+
+        //     loadFailure = true;
+        // }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load products.");
+
+            loadFailure = true;
+        }
+    }
+
+    bool isDeleting;
+    async Task DeleteAsync(MouseEventArgs e)
+    {
+        isDeleting = true;
+        try
+        {
+            var idsToRemove = products!.Where(x => x.Checked).Select(x => x.Id);
+
+            var response = await ApiHelpers.DeleteIdsAsync(idsToRemove, Http, "/api/product");
+            if (response is PostResponse.Success)
+            {
+                products!.RemoveAll(products!.Where(x => idsToRemove.Contains(x.Id)));
+            }
+            else
+            {
+                deleteFailedMsg = response is PostResponse.BadRequest br
+                    ? br.ErrorMessage
+                    : $"Delete failed!";
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering list");
+    }
+}

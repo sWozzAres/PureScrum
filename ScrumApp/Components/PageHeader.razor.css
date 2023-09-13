@@ -1,0 +1,30 @@
+.stick-header {
+    position: sticky;
+    top: var(--ct-topbar-height);
+    z-index: 1000;
+    background-color: var(--bg-color);
+}
+
+::deep h1, h1 {
+    text-transform: uppercase;
+    font-size: 1em;
+}
+
+::deep .breadcrumb {
+    font-size: 2rem;
+}
+
+    ::deep .breadcrumb h2 {
+        font-size: 2rem;
+        display: inline;
+    }
+
+    ::deep ol.breadcrumb {
+        margin-bottom: 0;
+    }
+
+::deep .ic {
+    font-size: 3em;
+    background-color: transparent;
+    color: black;
+}

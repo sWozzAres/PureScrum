@@ -1,0 +1,320 @@
+﻿@inject TabService TabService
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject RememberService Memory
+@inject ILogger<ProductBacklog> Logger
+
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Product Backlog items failed to load.
+    </div>
+}
+else if (sortedItems is not null)
+{
+    <div class="row mb-2">
+        <div class="d-flex flex-row">
+            <div class="flex-grow-1">
+                <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+            </div>
+            <div class="d-flex justify-content-end align-items-start">
+                <div class="form-check-inline">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1"
+                           checked="@(itemsOrdering == ItemsOrdering.Dependency)"
+                    @onclick="@(() => ChangeSortOrder(ItemsOrdering.Dependency))" />
+                    <label class="form-check-label" for="flexRadioDefault1">
+                        Dependency
+                    </label>
+                </div>
+                <div class="form-check-inline">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault4"
+                           checked="@(itemsOrdering == ItemsOrdering.DeliveryDate)"
+                    @onclick="@(() => ChangeSortOrder(ItemsOrdering.DeliveryDate))" />
+                    <label class="form-check-label" for="flexRadioDefault4">
+                        Delivery Date
+                    </label>
+                </div>
+                <div class="form-check-inline">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2"
+                           checked="@(itemsOrdering == ItemsOrdering.Value)"
+                    @onclick="@(() => ChangeSortOrder(ItemsOrdering.Value))" />
+                    <label class="form-check-label" for="flexRadioDefault2">
+                        Value
+                    </label>
+                </div>
+                <div class="form-check-inline">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault3"
+                           checked="@(itemsOrdering == ItemsOrdering.Roi)"
+                    @onclick="@(() => ChangeSortOrder(ItemsOrdering.Roi))" />
+                    <label class="form-check-label" for="flexRadioDefault3">
+                        Roi
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="tablequickview">
+        <div class="tablequickview-table table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="row"></th>
+                        <th scope="row">Name</th>
+
+                        <th scope="row">Product</th>
+                        <th scope="row">
+                            Delivery
+                            @if (itemsOrdering == ItemsOrdering.DeliveryDate)
+                            {
+                                <span class="bi @IconHelper.ClassName[Icon.SortDown] text-center" aria-hidden="true" />
+                            }
+                        </th>
+                        @if (itemsOrdering == ItemsOrdering.Value)
+                        {
+                            <th scope="row">
+                                Value
+                                @if (itemsOrdering == ItemsOrdering.Value)
+                                {
+                                    <span class="bi @IconHelper.ClassName[Icon.SortDown] text-center" aria-hidden="true" />
+                                }
+                            </th>
+                        }
+                        @if (itemsOrdering == ItemsOrdering.Roi)
+                        {
+                            <th scope="row">
+                                Roi
+                                @if (itemsOrdering == ItemsOrdering.Roi)
+                                {
+                                    <span class="bi @IconHelper.ClassName[Icon.SortDown] text-center" aria-hidden="true" />
+                                }
+                            </th>
+                        }
+                        <th scope="row">Estimation</th>
+                        <th scope="row">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in orderedItems)
+                    {
+                        var className = string.Join(" ",
+                        circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                        //item.Status == ProductBacklogItemStatusDto.Done ? "strike" : "",
+                        QuickViewId == item.Id ? "table-info" : "",
+                        item.WasMissing ? "opaque" : "");
+
+                        <tr class="@className">
+
+                            @{
+                                var iconClass = QuickViewId == item.Id
+                                ? IconHelper.ClassName[Icon.QuickClose]
+                                : IconHelper.ClassName[Icon.QuickOpen];
+                            }
+
+                            <td class="col-width-min">
+                                <span class="bi @iconClass text-center" aria-hidden="true" tabindex="0"
+                                @onclick="@(() => ToggleQuickView(item.Id))" />
+                            </td>
+                            <th scope="col">
+                                <HyperLink href="@item.Url()" TabKey="@Pages.ProductBacklogItem.View.TabKey">@item.Name</HyperLink>
+                            </th>
+
+                            <td>@item.ProductName</td>
+                            <td>@(item.DeliveryDate is null ? "" : item.DeliveryDate.ToDateOnly())</td >
+                            @if (itemsOrdering == ItemsOrdering.Value)
+                            {
+                                <td>@item.Value</td>
+                            }
+                            @if (itemsOrdering == ItemsOrdering.Roi)
+                            {
+                                <td>@item.Roi</td>
+                            }
+                            <td>@item.EstimationPoints</td>
+
+                            @{
+                                className = item.Status switch
+                                {
+                                    ScrumApi.PbiStatus.None => "bg-primary bg-gradient",
+                                    ScrumApi.PbiStatus.Ready => "bg-success bg-gradient",
+                                    ScrumApi.PbiStatus.Done => "bg-dark bg-gradient",
+                                    _ => ""
+                                };
+                            }
+                            <td><span class="badge @className">@item.Status</span></td>
+                        </tr>
+                        @* @if (openIds[item.Id])
+                {
+                <tr>
+                <td class="bg-light"></td>
+                <td class="bg-light markdown" colspan="7">@((MarkupString)Markdown.ToHtml(item.Description))</td>
+                </tr>
+                } *@
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        @if (itemsOrdering == ItemsOrdering.Value)
+                        {
+                            <td></td>
+                        }
+                        @if (itemsOrdering == ItemsOrdering.Roi)
+                        {
+                            <td></td>
+                        }
+                        <td>@orderedItems.Sum(x=>x.EstimationPoints) Total</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div class="tablequickview-view">
+            <PbiQuickView Id="@QuickViewId" OnClose="@(() => QuickViewId = null)" />
+        </div>
+    </div>
+
+}
+@if (isCreating)
+{
+    <ScrumApp.Pages.ProductBacklogItem.CreateModal OnClose="CreateClose"
+                                                   OnCreated="Created"
+                                                   OnGetCreateModel="@(() => new() { SprintId = Sprint.Id })" />
+}
+
+@code {
+    [Parameter] public SprintFullDto Sprint { get; set; } = null!;
+
+    //Dictionary<Guid, bool> openIds { get; set; } = null!;
+    List<ScrumApi.ProductBacklogItem> sortedItems { get; set; } = null!;
+    List<string> circularDependencies { get; set; } = null!;
+
+    public delegate Task<(List<ScrumApi.ProductBacklogItem>, List<string>)> GetItems(bool forceLoad);
+    [Parameter, EditorRequired] public GetItems OnGetItems { get; set; } = null!;
+
+    //ProductBacklogItemFullDto? dto;
+    string? QuickViewId;
+
+
+    bool loadFailure;
+
+    bool isCreating;
+    Task CreateClose(bool result)
+    {
+        isCreating = false;
+        return Task.CompletedTask;
+    }
+    async Task Created(CreatedEventArgs<CreateProductBacklogItemRequest> e)
+    {
+        var result = await e.Response.Content.ReadFromJsonAsync<ProductBacklogItemFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+        if (e.Open)
+        {
+            TabService.ResetTabs(ScrumApp.Pages.ProductBacklogItem.View.TabKey);
+            Navigation.NavigateTo($"/productbacklogitem/view/{result.Id}");
+        }
+
+        //await LoadAsync(true);
+        // sortedItems!.Add(
+        //     new ProductBacklogItemListDto(result.Id, result.Name, result.Description, result.Status,
+        //     result.ProductName, result.DeliveryDate, result.SprintId, result.SprintName, result.Value, result.Roi, result.EstimationPoints,
+        //     result.Children, result.SprintBacklogItems, false));
+        //openIds.Add(result.Id, false);
+
+        sortedItems!.Add(new ScrumApi.ProductBacklogItem(
+            result.Id.ToString(),
+            e.Model.Name,
+            (int)ProductBacklogItemStatusDto.None,
+            result.SprintName ?? "",
+            result.ProductName,
+            0.0f
+        ));
+
+        isCreating = false;
+    }
+
+    enum ItemsOrdering { Dependency, Value, Roi, DeliveryDate };
+    ItemsOrdering itemsOrdering = ItemsOrdering.Dependency;
+
+    void ChangeSortOrder(ItemsOrdering ordering)
+    {
+        Memory.Remember(sortKey, ordering);
+        itemsOrdering = ordering;
+    }
+
+    IEnumerable<ScrumApi.ProductBacklogItem> orderedItems
+    => itemsOrdering switch
+    {
+        ItemsOrdering.Dependency => sortedItems,
+        ItemsOrdering.Value => sortedItems
+            //.Where(x => !x.Missing && (x.Status == ProductBacklogItemStatusDto.None || x.Status == ProductBacklogItemStatusDto.Ready))
+            .OrderByDescending(i => i.Value),
+        ItemsOrdering.Roi => sortedItems
+            //.Where(x => !x.Missing && (x.Status == ProductBacklogItemStatusDto.None || x.Status == ProductBacklogItemStatusDto.Ready))
+            .OrderByDescending(i => i.Roi),
+        ItemsOrdering.DeliveryDate => sortedItems
+            //.Where(x => !x.Missing && (x.Status == ProductBacklogItemStatusDto.None || x.Status == ProductBacklogItemStatusDto.Ready))
+            .OrderBy(i => i.DeliveryDate, dateComparer),
+        _ => throw new NotSupportedException($"Items ordering '{itemsOrdering}' is not supported.")
+    };
+    DateComparer dateComparer = new();
+    string selectedKey = null!;
+    string sortKey = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArgumentNullException.ThrowIfNull(Sprint);
+        ArgumentNullException.ThrowIfNull(OnGetItems);
+
+        sortKey = $"{MemoryKeys.Sprint_Backlog_SortOrder}";
+        _ = Memory.TryGetValue(sortKey, out itemsOrdering);
+
+        await LoadProductBacklogAsync(false);
+    }
+
+    protected override void OnParametersSet()
+    {
+        selectedKey = $"{MemoryKeys.Sprint_Backlog_Selected}-{Sprint.Id}";
+        _ = Memory.TryGetValue(selectedKey, out QuickViewId);
+        Logger.LogInformation("recalled {id}", QuickViewId);
+    }
+
+    async Task LoadProductBacklogAsync(bool forceLoad)
+    {
+        try
+        {
+            (sortedItems, circularDependencies) = await OnGetItems(forceLoad);
+            //openIds = sortedItems.ToDictionary(x => x.Id, _ => false);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load product backlog items.");
+            loadFailure = true;
+        }
+    }
+
+    void ToggleQuickView(string id)
+    {
+        if (QuickViewId == id)
+        {
+            // toggle off
+            Memory.Remove(selectedKey);
+            QuickViewId = null;
+        }
+        else 
+        {
+            // toggle on
+            QuickViewId = id;
+            Memory.Remember(selectedKey, id);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering firstRender:{f}", firstRender);
+    }
+}

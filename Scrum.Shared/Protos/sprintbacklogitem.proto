@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option csharp_namespace = "ScrumApi";
+
+package utopia.scrum;
+
+service SprintBacklogItemService {
+	rpc List(ListSprintBacklogItemsRequest) returns (ListSprintBacklogItemsResponse);
+}
+
+message ListSprintBacklogItemsRequest{}
+
+enum SbiStatus {
+	SBI_STATUS_TODO = 0;
+	SBI_STATUS_IN_PROGRESS = 1;
+	SBI_STATUS_DONE = 2;
+}
+
+message SprintBacklogItemListShort
+{
+	string id = 1;
+	string name = 2;
+	string product_backlog_item_id = 3;
+	string product_backlog_item_name = 4;
+	string sprint_id = 5;
+	string sprint_name = 6;
+	float estimation_points = 7;
+	SbiStatus status = 8;
+}
+message ListSprintBacklogItemsResponse
+{
+	repeated SprintBacklogItemListShort sprint_backlog_items = 1;
+}

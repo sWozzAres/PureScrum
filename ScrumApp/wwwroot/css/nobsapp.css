@@ -1,0 +1,44 @@
+﻿:root {
+    --x-header-bg: #8f75da;
+    --x-header-height: 3rem;
+    --x-nav-bg: linear-gradient(135deg, #6379c3 0%, #546ee5 60%);
+    --x-main-bg: #fafbfe;
+}
+#layout{
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    grid-template-rows: min-content 1fr;
+    grid-template-areas: 
+        "logo header" "nav main";
+}
+#logo {
+    grid-area: logo;
+    background: var(--x-nav-bg);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#header {
+    grid-area: header;
+    background-color: var(--x-header-bg);
+    padding: 0.5rem;
+    height: var(--x-header-height);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#header .toolbar {
+    color: red;
+}
+#nav {
+    grid-area: nav;
+    background: var(--x-nav-bg);
+    padding: 0.5rem;
+    height: calc(100vh - var(--x-header-height));
+}
+#main {
+    grid-area: main;
+    background-color: var(--x-main-bg);
+    padding: 0.5rem;
+}

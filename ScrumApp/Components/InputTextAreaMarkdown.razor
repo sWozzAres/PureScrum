@@ -1,0 +1,42 @@
+﻿@using System.Linq.Expressions;
+
+@if (!FormIsDisabled)
+{
+    <label for="@ElementId" class="form-label">@Label</label>
+    <InputTextArea id="@ElementId" class="@ClassName"
+                   Value=@Value
+                   ValueChanged=@ValueChanged
+                   ValueExpression=ValueExpression />
+}
+else
+{
+    <div class="form-label">@Label</div>
+    <div class="@ClassName">
+        @((MarkupString)Markdown.ToHtml(Value ?? ""))
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    public bool FormIsDisabled { get; set; }
+
+    [Parameter,EditorRequired] public string Label { get; set; } = null!;
+    [Parameter, EditorRequired] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public Expression<Func<string?>>? ValueExpression { get; set; }
+    [Parameter]public string? Class { get; set; }
+
+    string ClassName => !FormIsDisabled
+        ? string.Join(" ", "form-control text-area", Class)
+        : string.Join(" ", "form-control text-area overflowy disabled markdown", Class);
+
+    string ElementId = HtmlHelpers.GetRandomHtmlId();
+
+    async Task OnValueChanged(string? value)
+        => await this.ValueChanged.InvokeAsync(value);
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Label);
+    }
+}

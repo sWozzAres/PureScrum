@@ -1,0 +1,25 @@
+﻿@Scrum.Server_HostAddress = https://localhost:7010
+
+GET {{Scrum.Server_HostAddress}}/requires-auth
+
+###
+
+POST {{Scrum.Server_HostAddress}}/identity/register
+Content-Type: application/json
+
+{
+  "username": "markb",
+  "password": "Pass123$",
+  "email":"markb@utopiasoftware.co.uk"
+}
+###
+
+
+POST {{Scrum.Server_HostAddress}}/identity/login
+Content-Type: application/json
+
+{
+  "username": "markb",
+  "password": "Pass123$"
+}
+###

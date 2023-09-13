@@ -1,0 +1,211 @@
+﻿@using System.Reflection;
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<ScrumBoard> Logger
+@inject HttpClient Http
+
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Product Backlog items failed to load.
+    </div>
+}
+else if (sortedItems is not null)
+{
+    <div class="row mb-2">
+        <div class="col-12">
+            <figure class="p-3">
+                <blockquote class="blockquote">
+                    <p> @((MarkupString)Markdown.ToHtml(Sprint.SprintGoal ?? ""))</p>
+                </blockquote>
+                <figcaption class="blockquote-footer">
+                    <cite title="Source Title">Sprint Goal</cite>
+                </figcaption>
+            </figure>
+        </div>
+
+        <div class="table-responsive" @ref="element">
+            <table class="table table-bordered">
+                <thead>
+                    <tr class="table-light">
+                        <th rowspan="2" class="align-middle w-auto">PBIs</th>
+                        <th colspan="3" class="text-center">SBIs</th>
+                    </tr>
+                    <tr class="table-light">
+                        <th scope="col">To Do</th>
+                        <th scope="col">In Progress</th>
+                        <th scope="col">Done</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in sortedItems)//.Where(x => x.SprintId == Sprint.Id && x.Status == ProductBacklogItemStatusDto.Ready))
+                    {
+                        var className = string.Join(" ",
+                        circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                        //item.Status == ProductBacklogItemStatusDto.Done ? "strike" : "",
+                        item.WasMissing ? "opaque" : "");
+
+                        <tr class="@className">
+                            <th scope="col">
+                                <HyperLink class="text-nowrap" href="@item.Url()" TabKey="@Pages.ProductBacklogItem.View.TabKey">@item.Name</HyperLink>
+                            </th>
+                            @foreach (var v in new ScrumApi.SbiStatus[] { ScrumApi.SbiStatus.Todo, ScrumApi.SbiStatus.InProgress, ScrumApi.SbiStatus.Done })
+                            {
+                                <td data-pbi="@item.Id,@((int)v)">
+                                    <div class="sb-sbi-grid">
+                                        @foreach (var sbi in item.SprintBacklogItems.Where(s => s.Status == v))
+                                        {
+                                            <div data-sbi-id="@sbi.Id" class="card bg-warning" draggable="true">
+                                                <div class="card-body">
+                                                    <a href="/sprintbacklogitem/view/@sbi.Id">@sbi.Name</a>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@code {
+    [Parameter] public SprintFullDto Sprint { get; set; } = null!;
+
+    IEnumerable<ScrumApi.ProductBacklogItem> sortedItems { get; set; } = null!;
+    List<string> circularDependencies { get; set; } = null!;
+
+    public delegate Task<(List<ScrumApi.ProductBacklogItem>, List<string>)> GetItems(bool forceLoad);
+    [Parameter, EditorRequired] public GetItems OnGetItems { get; set; } = null!;
+
+    bool loadFailure;
+
+    ElementReference element;
+    DotNetObjectReference<ScrumBoard>? objRef;
+    IJSObjectReference? _jsModule;
+    IJSObjectReference? _jsDragDrop;
+
+    bool initializeDragDrop;
+
+    /// <summary>
+    /// Called from JS when a draggable element is dropped on a target.
+    /// </summary>
+    [JSInvokable]
+    public async Task DropJS(string pbiId, ScrumApi.SbiStatus status, string sbiId)
+    {
+        var sourcePbi = sortedItems.Single(x => x.SprintBacklogItems.Any(c => c.Id == sbiId));
+        var sbi = sourcePbi.SprintBacklogItems.Single(x => x.Id == sbiId);
+
+        // if dropped onto same PBI with same Status, do nothing
+        if (sourcePbi.Id == pbiId && sbi.Status == status)
+            return;
+
+        var response = PostResponse.Create(
+            await Http.PostAsJsonAsync($"/api/sprintbacklogitem/{sbiId}/move",
+                new { pbiId, status }));
+
+        if (response is PostResponse.Success)
+        {
+            var destinationPbi = sourcePbi.Id == pbiId
+                ? sourcePbi
+                : sortedItems.Single(x => x.Id == pbiId);
+
+            sourcePbi.SprintBacklogItems.Remove(sbi);
+            //destinationPbi.SprintBacklogItems.Add(sbi with { Status = status });
+            destinationPbi.SprintBacklogItems.Add(new ScrumApi.SprintBacklogItemShort()
+                {
+                    Id = sbi.Id,
+                    Name = sbi.Name,
+                    Status = status
+                });
+
+            // stop all JS drag-drop on the page
+            await _jsDragDrop!.InvokeVoidAsync("stop");
+            await _jsDragDrop!.DisposeAsync();
+            _jsDragDrop = null;
+
+            // set a flag so reinitialization is perform ater rendering
+            initializeDragDrop = true;
+
+            StateHasChanged();
+        }
+        else
+        {
+            //TODO show user error
+            throw new InvalidOperationException("Failed to move SBI.");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArgumentNullException.ThrowIfNull(Sprint);
+        ArgumentNullException.ThrowIfNull(OnGetItems);
+
+        objRef = DotNetObjectReference.Create(this);
+
+        await LoadProductBacklogAsync(false);
+    }
+
+    async Task LoadProductBacklogAsync(bool forceLoad)
+    {
+        try
+        {
+            (sortedItems, circularDependencies) = await OnGetItems(forceLoad);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load product backlog items.");
+            loadFailure = true;
+        }
+    }
+
+    ValueTask<IJSObjectReference> InitDragDrop() =>
+        _jsModule!.InvokeAsync<IJSObjectReference>("initDragDrop", element, objRef);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //Logger.LogInformation("Initializing drag drop");
+
+            //_jsModule = await JS.InvokeAsync<IJSObjectReference>("import", $"./_content/ScrumApp/Pages/Sprint/ScrumBoard.razor.js?v={Assembly.GetExecutingAssembly().GetName().Version}");
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", $"./_content/ScrumApp/Pages/Sprint/ScrumBoard.razor.js");
+
+            _jsDragDrop = await InitDragDrop();
+        }
+
+        if (initializeDragDrop)
+        {
+            initializeDragDrop = false;
+            _jsDragDrop = await InitDragDrop();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        objRef?.Dispose();
+
+        try
+        {
+            if (_jsDragDrop is not null)
+            {
+                await _jsDragDrop.InvokeVoidAsync("stop");
+                await _jsDragDrop.DisposeAsync();
+            }
+
+            if (_jsModule is not null)
+            {
+                await _jsModule.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The JS side may routinely be gone already if the reason we're disposing is that
+            // the client disconnected. This is not an error.
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}

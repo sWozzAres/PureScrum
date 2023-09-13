@@ -1,0 +1,33 @@
+﻿@inject HttpClient Http
+
+<CreateFormTemplateDialog @ref="form" 
+                          OnSave="SaveAsync" OnGetCreateModel="this.OnLoad"
+                          OnCreated="OnCreated" OnClose="OnClose" Title="Create Definition Of Done">
+
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="descr" class="form-label">Description</label>
+        <InputTextArea id="descr" class="form-control" @bind-Value="form.Model.Description" rows="5" />
+    </div>
+</CreateFormTemplateDialog>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateDefinitionOfDoneRequest>> OnCreated { get; set; }
+    [Parameter] public CreateFormTemplateDialog<CreateDefinitionOfDoneRequest>.GetCreateModel? OnLoad { get; set; }
+
+    CreateFormTemplateDialog<CreateDefinitionOfDoneRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(CreateDefinitionOfDoneRequest model)
+        => await Http.PostAsJsonAsync("/api/definitionofdone", model);
+
+    protected override void OnInitialized()
+    {
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+    }
+}

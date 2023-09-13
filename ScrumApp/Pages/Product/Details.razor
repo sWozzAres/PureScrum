@@ -1,0 +1,53 @@
+﻿@inject HttpClient Http
+@inject ILogger<Details> Logger
+
+@{
+    var pageClassName = Visible ? "" : "hide";
+}
+<div class="@pageClassName">
+    <EditFormTemplate TModel="UpdateProductRequest" @ref="form" OnLoad="OnLoad" OnSave="OnSave">
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+        </div>
+        <div class="mb-3">
+            <InputTextAreaMarkdown @bind-Value="form.Model.Vision" Label="Vision" Class="text-area-lg" />
+        </div>
+    </EditFormTemplate>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public bool Visible { get; set; }
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductRequest>.LoadModel OnLoad { get; set; } = null!;
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductRequest>.SaveModel OnSave { get; set; } = null!;
+
+    // bool prevVisible;
+    // bool shouldRender;
+    // EditFormTemplate<UpdateProductRequest>.LoadModel prevOnLoad = null!;
+    // EditFormTemplate<UpdateProductRequest>.SaveModel prevOnSave = null!;
+
+    EditFormTemplate<UpdateProductRequest> form = null!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(OnLoad);
+        ArgumentNullException.ThrowIfNull(OnSave);
+    }
+
+    // protected override void OnParametersSet()
+    // {
+    //     shouldRender = OnLoad != prevOnLoad
+    //     || OnSave != prevOnSave
+    //     || prevVisible != Visible;
+
+    //     prevVisible = Visible;
+    //     prevOnSave = OnSave;
+    //     prevOnLoad = OnLoad;
+    // }
+    //protected override bool ShouldRender() => shouldRender;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering {fr}", firstRender);
+    }
+}

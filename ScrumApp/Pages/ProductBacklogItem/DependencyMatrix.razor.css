@@ -1,0 +1,7 @@
+/*.table-dependency-matrix thead tr:first-child th
+{
+    position: sticky;
+    top: 10em;
+    color: red  !important;
+}
+*/

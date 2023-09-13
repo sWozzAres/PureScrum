@@ -1,0 +1,14 @@
+﻿<div class="card">
+    <div class="card-body">
+        <h1>@ErrorMessage</h1>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string ErrorMessage { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(ErrorMessage);
+    }
+}

@@ -1,0 +1,128 @@
+﻿@using ScrumApp.Charts;
+@inject IHttpClientFactory ClientFactory
+@inject ILogger<BurndownChart> Logger
+
+@if (sprintNotStarted)
+{
+    <div class="alert alert-info" role="alert">
+        The sprint has not started yet.
+    </div>
+}
+else @if (entries is not null)
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    @if (burndownChartData is not null)
+                    {
+                        <ChartJs width="200" height="500" Data="burndownChartData" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*  <table class="table">
+        <thead>
+            <tr>
+                <th>Instant</th>
+                <th>None</th>
+                <th>Ready</th>
+                <th>Done</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries.OrderByDescending(x=>x.Instant))
+            {
+                <tr>
+                    <td>@entry.Instant</td>
+                    <td>@entry.NonePoints</td>
+                    <td>@entry.ReadyPoints</td>
+                    <td>@entry.DonePoints</td>
+                </tr>
+            }
+        </tbody>
+    </table> *@
+}
+@code {
+    [Parameter, EditorRequired] public SprintFullDto Sprint { get; set; } = null!;
+
+    List<BurndownEntry> entries = null!;
+    Chart burndownChartData { get; set; } = null!;
+    bool sprintNotStarted;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ArgumentNullException.ThrowIfNull(Sprint);
+
+        if (Sprint.Started is null)
+        {
+            sprintNotStarted = true;
+            return;
+        }
+
+        var client = ClientFactory.CreateClient("CachedClient");
+
+        var edd = Sprint.ExpectedDeliveryDate is not null
+            ? Sprint.ExpectedDeliveryDate.Value.UtcDateTime.ToString("O")
+            //? Sprint.ExpectedDeliveryDate.Value.ToString("O")
+            : "";
+
+        var sdd = Sprint.Started is not null
+            //? Sprint.Started.Value.ToDateTime(TimeOnly.MinValue).ToString("O")
+            ? Sprint.Started.Value.UtcDateTime.ToString("O")
+            : "";
+
+        entries = await client.GetFromJsonAsync<List<BurndownEntry>>(
+            $"/api/sprint/{Sprint.Id}/burndown?d={DateTime.Now.ToUniversalTime().Date.ToString("O")}&e={edd}&s={sdd}")
+                ?? throw new InvalidOperationException("Failed to load data.");
+
+        burndownChartData = new Chart()
+            {
+                Type = "line",
+                Data = new ChartData()
+                {
+                    Labels = entries.Select(x => x.InstantUtc.ToLocalTime().ToString()).ToArray(),  //  new string[] { "None", "Ready", "Done"},
+                    Datasets = new ChartData.DataSets[] {
+                        new ChartData.DataSets()
+                        {
+                            Label = "None + Ready",
+                            Data = entries.Where(x=>x.N != null && x.D != null).Select(x => Convert.ToDouble(x.N + x.R)).ToArray(),
+                            HoverOffset = 4,
+                            Fill = false
+                        },
+                        new ChartData.DataSets()
+                        {
+                            Label = "Done",
+                            Data = entries.Where(x=>x.D != null).Select(x => Convert.ToDouble(x.D)).ToArray(),
+                            HoverOffset = 4,
+                            Fill = false
+                         }
+                    }
+                },
+                Options = new ChartOptions()
+                {
+                    Responsive = true,
+                    MaintainAspectRatio = false,
+                    Scales = new ChartOptions.ChartOptionsScales()
+                    {
+                        Y = new ChartOptions.ChartOptionsScales.ChartOptionsScalesAxis()
+                        {
+                            Stacked = false
+                        },
+                        // X = new ChartOptions.ChartOptionsScales.ChartOptionsScalesAxis()
+                        // {
+                        //     Type = "time",
+                        //     // Time = new TimeAxis()
+                        //     // {
+                        //     //     Unit = "day"
+                        //     // }
+                        // }
+                    }
+                }
+            };
+
+        Logger.LogInformation("Burndown chart data {@burndownChartData}.", burndownChartData);
+    }
+}

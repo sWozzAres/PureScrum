@@ -1,0 +1,53 @@
+﻿@inject HttpClient Http
+@inject ILogger<PbiQuickView> Logger
+
+@if (Id is not null)
+{
+    <div class="quickview">
+        @((MarkupString)Markdown.ToHtml(Dto is not null ? Dto.Description : ""))
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string? Id { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+
+    ProductBacklogItemFullDto? Dto { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Logger.LogInformation("parametersSet Id:{id} Dto.Id:{did}", Id, Dto == null ? null : Dto.Id);
+
+        if (Id == null)
+        {
+            Dto = null;
+        }
+        else
+        {
+            var response = await Http.GetAsync($"/api/productbacklogitem/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                // TODO
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                Dto = await response.Content.ReadFromJsonAsync<ProductBacklogItemFullDto>()
+                        ?? throw new InvalidOperationException("Failed to deserialize.");
+            }
+            else
+            {
+                //TODO
+            }
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        Logger.LogInformation("rendering firstRender:{f}", firstRender);
+    }
+}

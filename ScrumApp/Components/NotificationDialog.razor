@@ -1,0 +1,31 @@
+﻿<div class="modal show" style="display:block;overflow-y: auto;" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h4 class="modal-title">Notification</h4>
+                <button type="button" class="btn-close" @onclick="@(() => Close(false))" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" @onclick="@(() => Close(true))">OK</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade show" @onclick="@(() => Close(false))"></div>
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    public async Task Close(bool value) => await OnClose.InvokeAsync(value);
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(ChildContent);
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+    }
+}

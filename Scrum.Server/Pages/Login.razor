@@ -1,0 +1,71 @@
+﻿@page "/login"
+
+@using System.ComponentModel.DataAnnotations;
+@attribute [RenderModeServer]
+@inject HttpClient Http
+@inject ILogger<Login> Logger
+
+<h1>Login</h1>
+
+<EditForm method="post" Model="@Model" OnSubmit="@LoginAsync" FormName="Login1">
+    <ValidationSummary/>
+    <div class="mb-3">
+        <label for="username">User Name</label>
+        <InputText id="username" @bind-Value="Model!.Username" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password">Password</label>
+        <InputText type="password" id="password" @bind-Value="Model!.Password" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Login</button>
+</EditForm>
+
+<button @onclick="ShowAuth" class="btn btn-secondary">Show Auth</button>
+
+@code {
+    // see https://devblogs.microsoft.com/dotnet/asp-net-core-updates-in-dotnet-8-preview-4/#auth
+    // https://www.youtube.com/watch?v=saQjBorgsA4&t=55s
+
+    [SupplyParameterFromForm]
+    public LoginForm? Model { get; set; }
+
+    protected override void OnInitialized() => Model ??= new();
+
+    async Task ShowAuth()
+    {
+        Logger.LogInformation("requiresAuth: {a}", await Http.GetStringAsync("/requires-auth"));
+    }
+    async Task LoginAsync()
+    {
+        Logger.LogInformation("submitting");
+
+        var response = await Http.PostAsJsonAsync<LoginForm>("/identity/login?cookieMode=true", Model!);
+
+        Logger.LogInformation("{@response}", response);
+
+        Logger.LogInformation("requiresAuth: {a}", await Http.GetStringAsync("/requires-auth"));
+
+        // if (response.IsSuccessStatusCode)
+        // {
+        //     // var loginContent = await response.Content.ReadFromJsonAsync<JsonElement>();
+        //     // var accessToken = loginContent.GetProperty("access_token").GetString();
+
+        //     // Logger.LogInformation("access token: {at}", accessToken);
+
+        //     // Http.DefaultRequestHeaders.Authorization = new("Bearer", accessToken);
+
+        //     // Logger.LogInformation("requiresAuth: {a}", await Http.GetStringAsync("/requires-auth"));
+        // }
+    }
+
+    public class LoginForm
+    {
+        [Required]
+        public string Username { get; set; } = "markb";
+        [Required]
+        public string Password { get; set; } = "Pass123$";
+    }
+}
+

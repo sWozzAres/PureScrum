@@ -1,0 +1,41 @@
+﻿@inject HttpClient Http
+
+<CreateFormTemplateDialog @ref="form" 
+                          OnSave="SaveAsync" OnGetCreateModel="this.OnLoad"
+                          OnCreated="OnCreated" OnClose="OnClose" Title="Create Product Backlog Item">
+
+
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+    </div>
+    <div class="mb-3">
+        <label for="sprint" class="form-label">Sprint Goal</label>
+        <InputTextArea id="sprint" class="form-control" @bind-Value="form.Model.SprintGoal" rows="10"
+                       placeholder="1. A short statement of the value the Scrum Team intends to create during the Sprint.
+2. Is more important even than the sum of the individual PBIs.
+3. Creates coherence in the PBIs, helping to create a valuable Regular Product Increment.
+4. What the Scrum Team aspires to achieve by the end of the Sprint.
+5. At the end of the Sprint, the team should check the intended value described in the Sprint Goal against reality.
+6, The core of the Regular Product Increment." />
+    </div>
+
+
+</CreateFormTemplateDialog>
+
+@code {
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateSprintRequest>> OnCreated { get; set; }
+    [Parameter] public CreateFormTemplateDialog<CreateSprintRequest>.GetCreateModel? OnLoad { get; set; }
+
+    CreateFormTemplateDialog<CreateSprintRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(CreateSprintRequest model)
+       => await Http.PostAsJsonAsync("/api/sprint", model);
+
+    protected override void OnInitialized()
+    {
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+    }
+}

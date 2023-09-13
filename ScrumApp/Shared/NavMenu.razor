@@ -1,0 +1,71 @@
+﻿ <a href="/" class="logo">PureScrum</a>
+
+@* <div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Scrum</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div> *@
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi @IconHelper.ClassName[Icon.Home] text-center" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="product/list">
+                <span class="bi @IconHelper.ClassName[Icon.Product] text-center" aria-hidden="true"></span> Products
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="sprint/list">
+                <span class="bi @IconHelper.ClassName[Icon.Sprint] text-center" aria-hidden="true"></span> Sprints
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="productbacklogitem/list">
+                <span class="bi @IconHelper.ClassName[Icon.PBI] text-center" aria-hidden="true"></span> Refine
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="productbacklogitem/matrix">
+                <span class="bi @IconHelper.ClassName[Icon.Dependency] text-center" aria-hidden="true"></span> Matrix
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="sprintbacklogitem/list">
+                <span class="bi @IconHelper.ClassName[Icon.SBI] text-center" aria-hidden="true"></span> SBI
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="impediment/list">
+                <span class="bi @IconHelper.ClassName[Icon.Impediment] text-center" aria-hidden="true"></span> Impediment
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="definitionofdone/list">
+                <span class="bi @IconHelper.ClassName[Icon.DefinitionOfDone] text-center" aria-hidden="true"></span> Definition Of Done
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="charts">
+                <span class="bi @IconHelper.ClassName[Icon.Charts] text-center" aria-hidden="true"></span> Charts
+            </NavLink>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

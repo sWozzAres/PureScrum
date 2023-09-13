@@ -1,0 +1,164 @@
+﻿@page "/sprint/view/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject TabService TabService
+@inject ILogger<View> Logger
+@inject ScrumApi.ProductBacklogItemService.ProductBacklogItemServiceClient Client
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Sprint" Icon="@Icon.Sprint" ClassName="bi-sprint">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="row">
+        <div class="col-12">
+            <Tabs2 @bind-Selected="tabPage" Key="@TabKey" Info="tabInfo" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-top-0 no-br-top">
+                <div class="card-body">
+                    @if (tabPage == TabPage.Details)
+                    {
+                        <Details OnSave="SaveAsync" OnLoad="Load" />
+                    }
+                    else if (tabPage == TabPage.ProductBacklog)
+                    {
+                        <ProductBacklog Sprint="@dto" OnGetItems="GetProductBacklog" />
+                    }
+                    else if (tabPage == TabPage.ScrumBoard)
+                    {
+                        <ScrumBoard Sprint="dto" OnGetItems="GetProductBacklog" />
+                    }
+                    else if (tabPage == TabPage.BurndownChart)
+                    {
+                        <BurndownChart Sprint="dto" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    public static string TabKey = "Sprint_View";
+    public enum TabPage { Details, ProductBacklog, ScrumBoard, BurndownChart }
+    TabPage tabPage = TabPage.Details;
+    Dictionary<TabPage, TabInfo> tabInfo = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateSprintRequest model)
+    {
+        var response = PostResponse.Create(await Http.PostAsJsonAsync($"/api/sprint/{Id}", model));
+        //if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        if (response is PostResponse.Success result)
+        {
+            dto = await result.Response.Content.ReadFromJsonAsync<SprintFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response.Response;
+    }
+
+    UpdateSprintRequest Load()
+        => new(dto.SprintGoal, dto.ExpectedDeliveryDate, dto.Status,
+            dto.Name, dto.Started);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _ = TabService.TryGetValue<TabPage>(TabKey, out tabPage);
+        await LoadAsync();
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    List<ScrumApi.ProductBacklogItem>? _sortedItems;
+    List<string> _circularDependencies { get; set; } = null!;
+    async Task<(List<ScrumApi.ProductBacklogItem>, List<string>)> GetProductBacklog(bool forceLoad)
+    {
+        if (_sortedItems is null || _circularDependencies is null || forceLoad)
+        {
+            var items = (await Client.ListAsync(new ScrumApi.ListProductBacklogItemsRequest()
+                {
+                    Filter = $"SprintId={Id}",
+                    IncludeDependsOn = true,
+                    IncludeSbis = true
+                })).ProductBacklogItems;
+
+            (_sortedItems, _circularDependencies) = DtoHelpers.TopologicalSort(items);
+        }
+        return (_sortedItems, _circularDependencies);
+        
+    }
+
+    // List<ProductBacklogItemListDto>? _sortedItems;
+    // List<Guid>? _circularDependencies;
+    // async Task<(List<ProductBacklogItemListDto>, List<Guid>)> GetProductBacklog(bool forceLoad)
+    // {
+    //     if (_sortedItems is null || _circularDependencies is null || forceLoad)
+    //     {
+    //         var items = await Http.GetFromJsonAsync<List<ProductBacklogItemListDto>>($"/api/sprint/{Id}/productbacklogitems")
+    //             ?? throw new InvalidOperationException("Failed to load.");
+
+    //         (_sortedItems, _circularDependencies) = DtoHelpers.TopologicalSort(items);
+    //     }
+    //     return (_sortedItems, _circularDependencies);
+    // }
+
+    SprintFullDto dto = null!;
+    string? loadErrorMessage;
+    async Task LoadAsync()
+    {
+        _sortedItems = null;
+        _circularDependencies = null!;
+        dto = null!;
+        try
+        {
+            var response = await Http.GetAsync($"/api/sprint/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<SprintFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+                // dto = await Http.GetFromJsonAsync<SprintFullDto>($"/api/sprint/{Id}")
+                //     ?? throw new InvalidOperationException("Failed to load.");
+            }
+
+            tabInfo = new()
+            {
+                //{ TabPage.ProductBacklog, new(IconHelper.ClassName[Icon.PBI], $" ( {items.Where(i=>!i.Missing).Count().ToString()} )") },
+                { TabPage.ProductBacklog, new(IconHelper.ClassName[Icon.PBI]) },
+                { TabPage.Details, new(IconHelper.ClassName[Icon.Details])},
+                { TabPage.ScrumBoard, new(IconHelper.ClassName[Icon.ScrumBoard]) },
+                { TabPage.BurndownChart, new(IconHelper.ClassName[Icon.Burndown]) },
+            };
+        }
+        catch (Exception)
+        {
+            loadErrorMessage = "Failed to load Sprint";
+        }
+    }
+}

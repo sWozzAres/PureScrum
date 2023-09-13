@@ -1,0 +1,209 @@
+﻿@inject HttpClient Http
+@inject ScrumApi.ProductService.ProductServiceClient ProductClient
+@inject ScrumApi.SprintService.SprintServiceClient SprintClient
+@inject ILogger<Details> Logger
+
+<EditFormTemplate TModel="UpdateProductBacklogItemRequest" @ref="form" OnLoad="OnLoad" OnSave="OnSave" OnBeginEdit="BeginEditAsync">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="product" class="form-label">Product</label>
+            @if (form.IsEditing)
+            {
+                <InputSelect id="product" class="form-select" @bind-Value="form.Model.ProductId">
+                    <option selected>Select a product...</option>
+                    @foreach (var product in products!)
+                    {
+                        <option value="@product.Id">@product.Name</option>
+                    }
+                </InputSelect>
+            }
+            else
+            {
+                <div class="form-control disabled">
+                    @* @{
+                var product = products.Single(p => p.Id == form.Model.ProductId);
+                } *@
+                    <HyperLink href="@Dto.ProductUrl()" TabKey="@ScrumApp.Pages.Product.View.TabKey">
+                        @Dto.ProductName
+                    </HyperLink>
+                </div>
+            }
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="sprint" class="form-label">Sprint</label>
+            @if (form.IsEditing)
+            {
+                <InputSelect id="sprint" class="form-select" @bind-Value="form.Model.SprintId">
+                    <option value="" selected>-- None --</option>
+                    @foreach (var sprint in sprints!)
+                    {
+                        <option value="@sprint.Id">@sprint.Name</option>
+                    }
+                </InputSelect>
+            }
+            else
+            {
+                <div class="form-control disabled">
+                    @* @{
+                var sprint = sprints.SingleOrDefault(p => p.Id == form.Model.SprintId);
+                } *@
+                    @if (Dto.SprintId is not null)
+                    {
+                        <HyperLink href="@Dto.SprintUrl()" TabKey="@ScrumApp.Pages.Sprint.View.TabKey">
+                            @Dto.SprintName
+                        </HyperLink>
+                    }
+                    else
+                    {
+                        <text>&nbsp;</text>
+                    }
+                </div>
+            }
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="status" class="form-label">Status</label>
+            <InputSelect id="status" class="form-select" @bind-Value="form.Model.Status">
+                <option value="None">None</option>
+                <option value="Ready">Ready</option>
+                <option value="Done">Done</option>
+            </InputSelect>
+        </div>
+    </div>
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+    </div>
+    <div class="mb-3">
+        <InputTextAreaMarkdown @bind-Value="form.Model.Description" Label="Description" />
+    </div>
+
+    <div class="mb-3">
+        <InputTextAreaMarkdown @bind-Value="form.Model.Notes" Label="Notes" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-auto mb-3">
+            <label for="delivery" class="form-label">Delivery Date</label>
+            @if (form.IsEditing)
+            {
+                <InputDate id="delivery" class="form-control" @bind-Value="form.Model.DeliveryDate" />
+            }
+            else
+            {
+                <div class="form-control disabled">
+                    @if (form.Model.DeliveryDate is not null)
+                    {
+                        <text>@form.Model.DeliveryDate.Value.ToString("D")</text>
+                    }
+                    else
+                    {
+                        <text>&nbsp;</text>
+                    }
+                </div>
+            }
+            <div class="form-check">
+                <label for="isfixed" class="form-check-label">Is Fixed</label>
+                <InputCheckbox id="isfixed" class="form-check-input" @bind-Value="form.Model.IsFixedDeliveryDate" />
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="estdays" class="form-label">Estimation Points</label>
+            <InputNumber id="estdays" class="form-control" @bind-Value="form.Model.EstimationPoints" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="value" class="form-label">Value</label>
+            <InputNumber id="value" class="form-control" @bind-Value="form.Model.Value" />
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="roi" class="form-label">Roi</label>
+            <InputNumber id="roi" class="form-control" @bind-Value="form.Model.Roi" />
+        </div>
+    </div>
+</EditFormTemplate>
+
+@code {
+    [Parameter, EditorRequired] public ProductBacklogItemFullDto Dto { get; set; } = null!;
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductBacklogItemRequest>.LoadModel OnLoad { get; set; } = null!;
+    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductBacklogItemRequest>.SaveModel OnSave { get; set; } = null!;
+
+    EditFormTemplate<UpdateProductBacklogItemRequest> form = null!;
+
+    ProductShortDto[]? products;
+    SprintShortDto[]? sprints;
+    //RepeatedField<ScrumApi.Product.ProductShort>? products;
+    //RepeatedField<ScrumApi.Sprint.SprintShort>? sprints;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Dto);
+        ArgumentNullException.ThrowIfNull(OnLoad);
+        ArgumentNullException.ThrowIfNull(OnSave);
+    }
+
+    /// <summary>
+    /// Loads the products and sprints.
+    /// </summary>
+    /// <returns></returns>
+    async Task<bool> BeginEditAsync()
+    {
+        try
+        {
+            //Task<ProductListDto[]?>? _products = null;
+            //Task<SprintListDto[]?>? _sprints = null;
+            //RepeatedField<ScrumApi.Product.ProductShort>? _products;
+            //RepeatedField<ScrumApi.Sprint.SprintShort>? sprints;
+            Grpc.Core.AsyncUnaryCall<ScrumApi.ListProductsResponse>? _products = null;
+            Grpc.Core.AsyncUnaryCall<ScrumApi.ListSprintsResponse>? _sprints = null;
+            List<Task> tasks = new();
+
+            if (products is null)
+            {
+                _products = ProductClient.ListAsync(new ScrumApi.ListProductsRequest());
+                //_products = Http.GetFromJsonAsync<ProductListDto[]>("/api/product");
+                tasks.Add(_products.ResponseAsync);
+            }
+
+            if (sprints is null)
+            {
+                _sprints = SprintClient.ListAsync(new ScrumApi.ListSprintsRequest());
+                //_sprints = Http.GetFromJsonAsync<SprintListDto[]>("/api/sprint");
+                tasks.Add(_sprints.ResponseAsync);
+            }
+
+            if (tasks.Count == 0)
+                return true;
+
+            var load = Task.WhenAll(tasks);
+
+            //try
+            //{
+            await load;
+            // }
+            // catch(Exception ex)
+            // {
+            //     Logger.LogInformation(ex, "Failed to load data2.");
+            // }
+
+            if (load.Status == TaskStatus.RanToCompletion)
+            {
+                if (_products is not null)
+                    products = _products.ResponseAsync.Result.Products.Select(x => new ProductShortDto(Guid.Parse(x.Id), x.Name)).ToArray();
+                if (_sprints is not null)
+                    sprints = _sprints.ResponseAsync.Result.Sprints.Select(x => new SprintShortDto(Guid.Parse(x.Id), x.Name)).ToArray();
+            }
+
+            return products is not null && sprints is not null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load data.");
+
+            throw new ScrumAppException("Failed to load data.");
+        }
+    }
+}

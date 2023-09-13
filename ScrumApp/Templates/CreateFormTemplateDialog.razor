@@ -1,0 +1,120 @@
+﻿@inject IJSRuntime JS
+@inject ILogger<CreateFormTemplateDialog<TModel>> Logger
+
+@typeparam TModel where TModel : class, new()
+
+@if (Model is not null)
+{
+    <div class="modal show" style="display:block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+
+            <EditForm  EditContext="@editContext" OnValidSubmit="ValidSubmit" class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">@Title</h4>
+                    <button type="button" class="btn-close" @onclick="@(() => Close(false))" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" @ref="ModalBodyElement">
+                    <DataAnnotationsValidator />
+
+                    <fieldset disabled="@FormIsDisabled" class="mb-3">
+                        @ChildContent
+                    </fieldset>
+
+                    <ValidationSummary />
+                </div>
+                <div class="modal-footer d-flex gap-2">
+                    <button type="submit" class="btn btn-primary" disabled="@isPosting" @onclick="() => CreateClicked(false)">Create</button>
+                    <button type="submit" class="btn btn-primary" disabled="@isPosting" @onclick="() => CreateClicked(true)">Create & Open</button>
+                    <button type="button" class="btn btn-secondary" @onclick="@(() => Close(false))">Close</button>
+                </div>
+            </EditForm>
+
+        </div>
+    </div>
+    <div class="modal-backdrop fade show" @onclick="@(() => Close(false))"></div>
+}
+
+@code {
+    [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
+    public delegate TModel GetCreateModel();
+    [Parameter, EditorRequired] public GetCreateModel? OnGetCreateModel { get; set; }
+    public delegate Task<HttpResponseMessage> SaveModel(TModel model);
+    [Parameter, EditorRequired] public SaveModel OnSave { get; set; } = null!;
+    [Parameter] public EventCallback<CreatedEventArgs<TModel>> OnCreated { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    public async Task Close(bool value) => await OnClose.InvokeAsync(value);
+    [Parameter, EditorRequired] public string Title { get; set; } = null!;
+
+    ElementReference? ModalBodyElement;
+
+    public TModel Model = null!;
+    bool openAfterSave;
+
+    void CreateClicked(bool open)
+    {
+        messageStore.Clear();
+        openAfterSave = open;
+    }
+
+    EditContext editContext { get; set; } = null!;
+    ValidationMessageStore messageStore = null!;
+
+    bool isPosting = false;
+    bool FormIsDisabled => isPosting;
+
+    async Task ValidSubmit()
+    {
+        isPosting = true;
+        try
+        {
+            try
+            {
+                var response = PostResponse.Create(await OnSave(Model));
+                if (response is PostResponse.Created)
+                {
+                    if (OnCreated.HasDelegate)
+                    {
+                        await OnCreated.InvokeAsync(new CreatedEventArgs<TModel>(response.Response, openAfterSave, Model));
+                    }
+                }
+                else
+                {
+                    response.HandlePostFailure(editContext, messageStore);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Logger.LogError(ex, "Failed to communicate with the server, status code: {statusCode}.", ex.StatusCode);
+
+                messageStore.Clear();
+                messageStore.Add(editContext.Field(""), "Failed to communicate with the server.");
+                editContext.NotifyValidationStateChanged();
+            }
+        }
+        finally
+        {
+            isPosting = false;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(ChildContent);
+        ArgumentNullException.ThrowIfNull(OnSave);
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        ArgumentNullException.ThrowIfNull(Title);
+
+        Model = OnGetCreateModel == null ? new() : OnGetCreateModel();
+
+        editContext = new EditContext(Model);
+        messageStore = new ValidationMessageStore(editContext);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("focusFirstInputControl", ModalBodyElement);
+        }
+    }
+}

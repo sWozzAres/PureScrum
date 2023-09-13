@@ -1,0 +1,132 @@
+﻿@page "/definitionofdone/list"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Definitions Of Done</PageTitle>
+
+<PageHeader Title="Definitions Of Done" Icon="@Icon.DefinitionOfDone" ClassName="bi-definitionofdone">
+    <SubHeaderContent><h2>List</h2></SubHeaderContent>
+    <ChildContent>
+        <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@(isDeleting || !checkedIds.Any(x=>x.Value))">Delete</button>
+    </ChildContent>
+</PageHeader>
+ @if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Definitions of Done failed to load.
+    </div>
+}
+else if (definitions is not null)
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="row" class="col-width-min"></th>
+                                    <th scope="row">Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var definitionofdone in definitions.OrderByDescending(p => p.Name))
+                                {
+                                    <tr @key="definitionofdone">
+                                        <td><input type="checkbox" @bind-value="@checkedIds[definitionofdone.Id]" /></td>
+                                        <th scope="col"><a href="/definitionofdone/view/@definitionofdone.Id">@definitionofdone.Name</a></th>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@if (deleteFailedMsg is not null)
+{
+    <NotificationDialog OnClose="@(() => deleteFailedMsg = null)">
+        @deleteFailedMsg
+    </NotificationDialog>
+}
+@if (isCreating)
+{
+    <CreateModal OnClose="@((result) => isCreating = false)" OnCreated="Created" />
+}
+@code {
+    List<DefinitionOfDoneListDto>? definitions;
+    Dictionary<Guid, bool> checkedIds = new();
+
+    string? deleteFailedMsg;
+    bool loadFailure;
+
+    bool isCreating;
+    async Task Created(CreatedEventArgs<CreateDefinitionOfDoneRequest> e)
+    {
+        if (e.Open)
+        {
+            var result = await e.Response.Content.ReadFromJsonAsync<ResponseWithId>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            //TabService.ResetTab(Scrum.Web.Blazor.Pages.Product.View.TabKey);
+            Navigation.NavigateTo($"/definitionofdone/view/{result.Id}");
+        }
+
+        await LoadAsync();
+
+        isCreating = false;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        try
+        {
+            definitions = await Http.GetFromJsonAsync<List<DefinitionOfDoneListDto>>("/api/definitionofdone")
+                ?? throw new InvalidOperationException("Failed to load data.");
+
+            checkedIds = definitions.ToDictionary(x => x.Id, _ => false);
+        }
+        catch
+        {
+            loadFailure = true;
+        }
+    }
+
+    bool isDeleting;
+    async Task DeleteAsync(MouseEventArgs e)
+    {
+        isDeleting = true;
+        try
+        {
+            var response = await ApiHelpers.DeleteIdsAsync(checkedIds, Http, "/api/definitionofdone");
+            if (response is PostResponse.Success)
+            {
+                var idsToRemove = checkedIds.Where(x => x.Value).Select(x => x.Key);
+                definitions!.RemoveAll(x => idsToRemove.Contains(x.Id));
+                checkedIds = definitions.ToDictionary(x => x.Id, _ => false);
+                //await LoadAsync();
+            }
+            else
+            {
+                deleteFailedMsg = response is PostResponse.BadRequest br
+                    ? br.ErrorMessage
+                    : $"Delete failed!";
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+}

@@ -1,0 +1,47 @@
+﻿@Scrum.Web.Api_HostAddress = https://localhost:7195
+@accessToken = CfDJ8BDthyVAcDNIguv4Y4oCan3zISX3rF6eRYho00VCA4xindAebnbxCu3_07rVmC1qKGKR8SqnT73srjo_fQCCpgoSSi911237D1Rf5Ng-Fg57_32xTHllzaxCggNshnZ_toQTd9MRnD46n62uJGsWdqMf08sWtTmiNk3wlel18i4aiocGgxWEDPTLfmvZ6M0stVgl4WaRik4laZcrB31mmIUULsupbtEhAN_yThlMWww5BzYkWy0VOWqrL5kEIxIixUFUbVYuRQNpNXsLXAw7aniKwk9OPBTIVnv_BY67HEoI6pXTNtq6wqNwGxz3QV0IuQnxX4YAYcGzr_a6IvXfzxwCNN251FZte424EnvzHk9eYTI_NxgDuBAoTHIXSUL8xVeggHjqEajGX-r4MZmlQuOScalfGZJ3TN_8nS5tZzbuJo5XEPVfE7qNCwYTIpALc0V5s6zs959otX1iy2lDQ40MHLkwrLuKlt58zxO-A35TFR-FAeJUBoRTXfynxpflgKCEufnPvOLK66eV95J1TTlIws15zaW2BXZJhLs2hXKuT4bc-s9CwyC-CNPEtmx9sCOINreTiWD1P8FZtGa8FxzKPpsQdbh3sOi4cJKK8jGb5e8CxCLTesvOg7H7JBgmEQdWbyUKSP9AYSkgtgub8xhdpN7OeJgG8RKJHaBOVYZNvRXBKwpsqgxR7fCPKySe3i4WoI4_08E-evpsNELDLxw
+
+GET {{Scrum.Web.Api_HostAddress}}/
+Authorization: Bearer {{accessToken}}
+
+###
+
+POST {{Scrum.Web.Api_HostAddress}}/register
+Content-Type: application/json
+
+{
+  "username": "markb",
+  "password": "Pass123$",
+  "email":"markb@utopiasoftware.co.uk"
+}
+###
+
+POST {{Scrum.Web.Api_HostAddress}}/login
+Content-Type: application/json
+
+{
+  "username": "markb",
+  "password": "Pass123$"
+}
+###
+
+GET {{Scrum.Web.Api_HostAddress}}/refresh
+Authorization: Bearer {{accessToken}}
+
+{
+  "refreshToken":"{{accessToken}}"
+}
+###
+
+GET {{Scrum.Web.Api_HostAddress}}/manage/info
+Authorization: Bearer {{accessToken}}
+
+###
+
+GET {{Scrum.Web.Api_HostAddress}}/
+
+###
+
+GET {{Scrum.Web.Api_HostAddress}}/
+
+###

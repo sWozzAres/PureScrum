@@ -1,0 +1,142 @@
+﻿@page "/sprintbacklogitem/list"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject ScrumApi.SprintBacklogItemService.SprintBacklogItemServiceClient Client
+@inject ILogger<List> Logger
+
+<PageTitle>Sprint Backlog Items</PageTitle>
+
+<PageHeader Title="Sprint Backlog Items" Icon="@Icon.SBI" ClassName="bi-sbi">
+    <SubHeaderContent><h2>List</h2></SubHeaderContent>
+    <ChildContent>
+        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@(isDeleting || !checkedIds.Any(x=>x.Value))">Delete</button>
+    </ChildContent>
+</PageHeader>
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Sprint Backlog Items failed to load.
+    </div>
+}
+else if (items is not null)
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="row" class="col-width-min"></th>
+                                    <th scope="row">Name</th>
+                                    <th scope="row">PBI</th>
+                                    <th scope="row">Sprint</th>
+                                    <th scope="row">Estimation</th>
+                                    <th scope="row">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in items.OrderBy(x => x.Status).ThenBy(x => x.SprintName))
+                                {
+
+                                    var className = "";
+                                    //string.Join(" ",
+                                    //circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                                    //(SprintBacklogItemStatusDto)item.Status == SprintBacklogItemStatusDto.Done ? "strike" : "");
+
+                                    <tr @key="item" class="@className">
+                                        <td><input type="checkbox" @bind-value="@checkedIds[item.Id]" /></td>
+                                        <th scope="col"><a href="/sprintbacklogitem/view/@item.Id">@item.Name</a></th>
+                                        <td>@item.ProductBacklogItemName</td>
+                                        <td>@item.SprintName</td>
+                                        <td>@item.EstimationPoints</td>
+                                        @{
+                                            var status = (SprintBacklogItemStatusDto)item.Status;
+                                            className = status switch
+                                            {
+                                                SprintBacklogItemStatusDto.ToDo => "bg-primary bg-gradient",
+                                                SprintBacklogItemStatusDto.InProgress => "bg-success bg-gradient",
+                                                SprintBacklogItemStatusDto.Done => "bg-dark bg-gradient",
+                                                _ => ""
+                                            };
+                                        }
+                                        <td><span class="badge @className">@status.ToDisplayString()</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@if (deleteFailedMsg is not null)
+{
+    <NotificationDialog OnClose="@(() => deleteFailedMsg = null)">
+        @deleteFailedMsg
+    </NotificationDialog>
+}
+
+@code {
+    //List<SprintBacklogItemListDto>? items;
+    RepeatedField<ScrumApi.SprintBacklogItemListShort> items = null!;
+    Dictionary<string, bool> checkedIds = new();
+
+    string? deleteFailedMsg;
+    bool loadFailure;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    async Task LoadAsync()
+    {
+        try
+        {
+            items = (await Client.ListAsync(new ScrumApi.ListSprintBacklogItemsRequest())).SprintBacklogItems;
+
+            // items = await Http.GetFromJsonAsync<List<SprintBacklogItemListDto>?>("/api/sprintbacklogitem")
+            //     ?? throw new InvalidOperationException("Failed to load.");
+
+            checkedIds = items.ToDictionary(x => x.Id, _ => false);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load sprint backlog items.");
+
+            loadFailure = true;
+        }
+    }
+
+    bool isDeleting;
+    async Task DeleteAsync(MouseEventArgs e)
+    {
+        isDeleting = true;
+        try
+        {
+            var response = await ApiHelpers.DeleteIdsAsync(checkedIds, Http, "/api/sprintbacklogitem");
+            if (response is PostResponse.Success)
+            {
+                var idsToRemove = checkedIds.Where(x => x.Value).Select(x => x.Key);
+                //items!.RemoveAll(x => idsToRemove.Contains(x.Id));
+                items!.RemoveAll(items!.Where(x => idsToRemove.Contains(x.Id)));
+                checkedIds = items!.ToDictionary(x => x.Id, _ => false);
+                //await LoadAsync();
+            }
+            else
+            {
+                deleteFailedMsg = response is PostResponse.BadRequest br
+                    ? br.ErrorMessage
+                    : $"Delete failed!";
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+}

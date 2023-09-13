@@ -1,0 +1,95 @@
+﻿@page "/definitionofdone/view/{Id:guid}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@if (loadErrorMessage is not null)
+{
+    <LoadErrorMessage ErrorMessage="@loadErrorMessage" />
+}
+else if (dto is not null)
+{
+    <PageTitle>@dto.Name</PageTitle>
+
+    <PageHeader Title="Definition Of Done" Icon="@Icon.DefinitionOfDone" ClassName="bi-definitionofdone">
+        <SubHeaderContent>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item active" aria-current="page"><h2>@dto.Name</h2></li>
+                </ol>
+            </nav>
+        </SubHeaderContent>
+    </PageHeader>
+
+    <div class="card">
+        <div class="card-body">
+            <EditFormTemplate @ref="form" OnLoad="Load" OnSave="SaveAsync">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <InputText id="name" class="form-control" @bind-Value="form.Model.Name" />
+                </div>
+                <div class="mb-3">
+                    <InputTextAreaMarkdown @bind-Value="form.Model.Description" Label="Description" />
+                </div>
+            </EditFormTemplate>
+
+        </div>
+    </div>
+}
+@code {
+    [Parameter, EditorRequired] public Guid Id { get; set; }
+
+    EditFormTemplate<UpdateDefinitionOfDoneRequest> form = null!;
+
+    async Task<HttpResponseMessage> SaveAsync(UpdateDefinitionOfDoneRequest model)
+    {
+        var response = await Http.PostAsJsonAsync($"/api/definitionofdone/{Id}", model);
+        if (response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            dto = await response.Content.ReadFromJsonAsync<DefinitionOfDoneFullDto>()
+                ?? throw new InvalidOperationException("Failed to deserialize.");
+
+            StateHasChanged();
+        }
+        return response;
+    }
+
+    UpdateDefinitionOfDoneRequest Load()
+        => new(dto.Name, dto.Description);
+
+    DefinitionOfDoneFullDto dto = null!;
+    string? loadErrorMessage;
+    async Task LoadAsync()
+    {
+        dto = null!;
+        try
+        {
+            var response = await Http.GetAsync($"/api/definitionofdone/{Id}");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                loadErrorMessage = "Not Found";
+            }
+            else
+            {
+                dto = await response.Content.ReadFromJsonAsync<DefinitionOfDoneFullDto>()
+                    ?? throw new InvalidOperationException("Failed to deserialize.");
+
+                // dto = await Http.GetFromJsonAsync<DefinitionOfDoneFullDto>($"/api/definitionofdone/{Id}")
+                //     ?? throw new InvalidOperationException("Failed to load.");
+            }
+        }
+        catch
+        {
+            loadErrorMessage = "Failed to load Definition of Done";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Id);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+}

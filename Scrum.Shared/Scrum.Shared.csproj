@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.10.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.24.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.56.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.56.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\productbacklogitem.proto" GrpcServices="Both" AdditionalImportDirs="Protos" />
+		<Protobuf Include="Protos\sprint.proto"  GrpcServices="Both"/>
+		<Protobuf Include="Protos\product.proto"  GrpcServices="Both"/>
+		<Protobuf Include="Protos\sprintbacklogitem.proto"  GrpcServices="Both"/>
+	</ItemGroup>
+	
+
+</Project>

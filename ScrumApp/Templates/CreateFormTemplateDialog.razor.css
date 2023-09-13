@@ -1,0 +1,9 @@
+::deep .modal-footer {
+    background-color: #ececec;
+}
+::deep .modal-content {
+    background-color: #fafbfe;
+}
+::deep .modal-header {
+    background-color: #ffffff;
+}

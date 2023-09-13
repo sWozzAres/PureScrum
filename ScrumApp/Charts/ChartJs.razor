@@ -1,0 +1,29 @@
+﻿@inject IJSRuntime JS
+
+@* <div class="chart-container" style1="position: relative;"> *@
+<div class="chart-container">
+    <canvas @ref="ctx" @attributes="AdditionalAttributes" role="img">
+        <p>Your browser does not support the canvas element.</p>
+    </canvas>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Chart Data { get; set; } = null!;
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    ElementReference ctx;
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Data);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("renderChart", ctx, Data);
+        }
+    }
+}

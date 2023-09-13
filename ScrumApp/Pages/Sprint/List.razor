@@ -1,0 +1,146 @@
+﻿@page "/sprint/list"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject TabService TabService
+@inject ScrumApi.SprintService.SprintServiceClient Client
+@inject ILogger<List> Logger
+
+<PageTitle>Sprints</PageTitle>
+
+<PageHeader Title="Sprints" Icon="@Icon.Sprint" ClassName="bi-sprint">
+    <SubHeaderContent><h2>List</h2></SubHeaderContent>
+    <ChildContent>
+        <button class="btn btn-primary" @onclick="@(() => isCreating = true)">New</button>
+        <button class="btn btn-danger" @onclick="DeleteAsync" disabled="@(isDeleting || (sprints is not null && !sprints.Any(x=>x.Checked)))">Delete</button>
+    </ChildContent>
+</PageHeader>
+@if (loadFailure)
+{
+    <div class="alert alert-danger" role="alert">
+        Sprints failed to load.
+    </div>
+}
+else if (sprints is not null)
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="row" class="col-width-min"></th>
+                                <th scope="row">Name</th>
+                                <th scope="row">Delivery <span class="bi bi-arrow-down text-center" aria-hidden="true" /></th>
+                                <th scope="row">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sprint in sprints.OrderBy(p => p.ExpectedDeliveryDate))
+                            {
+                                <tr @key="sprint">
+                                    <td><input type="checkbox" @bind-value="@sprint.Checked" /></td>
+                                    <th scope="col">
+                                        <HyperLink href="@sprint.Url()" TabKey="@Sprint.View.TabKey">@sprint.Name</HyperLink>
+                                    </th>
+                                    <td>
+                                        @{
+                                            var x = sprint.ExpectedDeliveryDateIsValid
+                                            ? sprint.ExpectedDeliveryDate.ToDateTimeOffset().ToLocalTime().ToString("d")
+                                            : "";
+                                        }
+                                        @x
+                                    </td>
+                                    @{
+                                        var status = (SprintStatusDto)sprint.Status;
+                                        var className = status switch
+                                        {
+                                            SprintStatusDto.None => "bg-primary bg-gradient",
+                                            SprintStatusDto.Ready => "bg-success bg-gradient",
+                                            SprintStatusDto.Done => "bg-dark bg-gradient",
+                                            _ => ""
+                                        };
+                                    }
+                                    <td><span class="badge @className">@status.ToDisplayString()</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@if (deleteFailedMsg is not null)
+{
+    <NotificationDialog OnClose="@(() => deleteFailedMsg = null)">
+        @deleteFailedMsg
+    </NotificationDialog>
+}
+@if (isCreating)
+{
+    <CreateModal OnClose="@((result) => isCreating = false)" OnCreated="Created" />
+}
+@code {
+    RepeatedField<ScrumApi.SprintShort>? sprints;
+    string? deleteFailedMsg;
+    bool loadFailure;
+    bool isCreating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            sprints = (await Client.ListAsync(new ScrumApi.ListSprintsRequest())).Sprints;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load sprints.");
+
+            loadFailure = true;
+        }
+    }
+
+    async Task Created(CreatedEventArgs<CreateSprintRequest> e)
+    {
+        var result = await e.Response.Content.ReadFromJsonAsync<SprintShortDto>()
+            ?? throw new InvalidOperationException("Failed to deserialize.");
+
+        if (e.Open)
+        {
+            TabService.ResetTabs(ScrumApp.Pages.Sprint.View.TabKey);
+            Navigation.NavigateTo($"/sprint/view/{result.Id}");
+        }
+
+        sprints!.Add(new ScrumApi.SprintShort(result.Id.ToString(), e.Model.Name));
+
+        isCreating = false;
+    }
+
+    bool isDeleting;
+    async Task DeleteAsync()
+    {
+        isDeleting = true;
+        try
+        {
+            var idsToRemove = sprints!.Where(x => x.Checked).Select(x => x.Id);
+
+            var response = await ApiHelpers.DeleteIdsAsync(idsToRemove, Http, "/api/sprint");
+            if (response is PostResponse.Success)
+            {
+                sprints!.RemoveAll(sprints!.Where(x => idsToRemove.Contains(x.Id)));
+            }
+            else
+            {
+                deleteFailedMsg = response is PostResponse.BadRequest br
+                    ? br.ErrorMessage
+                    : $"Delete failed!";
+            }
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+}

@@ -1,0 +1,154 @@
+﻿@inject HttpClient Http
+@inject ILogger<CreateDependency> Logger
+
+<div class="modal show" style="display:block" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <EditForm EditContext="editContext" class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Create Dependencies</h4>
+                <button type="button" class="btn-close" @onclick="@(() => Close(false))" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="d-flex gap-3 align-content-center">
+                        @* <label for="name" class="form-label align-self-center">Name</label> *@
+
+                        <input id="name" class="form-control flex-grow-1"
+                        @bind="findModel.SearchString"
+                        @bind:event="oninput"
+                               placeholder="Enter name of product backlog item..." />
+
+                        <button type="button" class="btn btn-primary"
+                                disabled="@(string.IsNullOrEmpty(findModel.SearchString))"
+                        @onclick="FindAsync">
+                            Find
+                        </button>
+                    </div>
+                </div>
+                @if (pbis is not null)
+                {
+                    if (pbis.Length == 0)
+                    {
+                        <div class="alert alert-info">
+                            No items found.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th scope="row" class="col-width-min"></th>
+                                        <th scope="row">Name</th>
+                                        <th scope="row">Product</th>
+                                        <th scope="row">Sprint</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var pbi in pbis.Where(p => p.Id != Dto.Id))
+                                    {
+                                        var exists = Dto.Children.Any(x => x.Id == pbi.Id);
+                                        var className = exists ? "opaque" : "";
+
+                                        <tr @key="pbi" class="@className">
+                                            <td><input type="checkbox" disabled="@exists" @bind-value="@checkedIds[pbi.Id]" /></td>
+                                            <td>@pbi.Name</td>
+                                            <td>@pbi.ProductName</td>
+                                            <td>@pbi.SprintName</td>
+                                            <td></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer d-flex gap-2">
+                <ValidationSummary />
+                <button type="submit" class="btn btn-primary" @onclick="SaveAsync" disabled="@IsDisabled">Create</button>
+                <button type="button" class="btn btn-secondary" @onclick="@(() => Close(false))">Close</button>
+            </div>
+
+        </EditForm>
+    </div>
+</div>
+<div class="modal-backdrop fade show" @onclick="@(() => Close(false))"></div>
+
+@code {
+    [Parameter, EditorRequired] public ProductBacklogItemFullDto Dto { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnCreated { get; set; }
+
+    async Task Close(bool b)
+    {
+        await OnClose.InvokeAsync(b);
+    }
+
+    //TODO short
+    ProductBacklogItemListDto[]? pbis;
+    Dictionary<Guid, bool> checkedIds = new();
+    FindModel findModel = new();
+    EditContext editContext { get; set; } = null!;
+    ValidationMessageStore messageStore = null!;
+    bool IsDisabled => isPosting || !checkedIds.Any(x => x.Value);
+    bool isPosting;
+
+    async Task SaveAsync()
+    {
+        isPosting = true;
+        try
+        {
+            messageStore.Clear();
+
+            var result = PostResponse.Create(
+                await Http.PostAsJsonAsync($"/api/productbacklogitem/{Dto.Id}/dependencies",
+                    checkedIds.Where(x => x.Value).Select(x => x.Key)));
+
+            if (result is PostResponse.Success)
+            {
+                await OnCreated.InvokeAsync();
+            }
+            else
+            {
+                result.HandlePostFailure(editContext, messageStore);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Logger.LogError(ex, "Failed to communicate with the server, status code: {statusCode}.", ex.StatusCode);
+
+            messageStore.Clear();
+            messageStore.Add(editContext.Field(""), "Failed to communicate with the server.");
+            editContext.NotifyValidationStateChanged();
+        }
+        finally
+        {
+            isPosting = false;
+        }
+    }
+
+    async Task FindAsync()
+    {
+        pbis = await Http.GetFromJsonAsync<ProductBacklogItemListDto[]>($"/api/productbacklogitem?nf={findModel.SearchString}")
+           ?? throw new InvalidOperationException("Failed to load.");
+
+        checkedIds = pbis.ToDictionary(x => x.Id, _ => false);
+    }
+
+    protected override void OnInitialized()
+    {
+        ArgumentNullException.ThrowIfNull(Dto);
+        if (!OnClose.HasDelegate) throw new ArgumentNullException(nameof(OnClose));
+        if (!OnCreated.HasDelegate) throw new ArgumentNullException(nameof(OnCreated));
+
+        editContext = new EditContext(findModel);
+        messageStore = new ValidationMessageStore(editContext);
+    }
+
+    class FindModel
+    {
+        public string SearchString { get; set; } = null!;
+    }
+}

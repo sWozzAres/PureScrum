@@ -1,0 +1,62 @@
+﻿syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "google/api/annotations.proto";
+import "sprintbacklogitem.proto";
+
+option csharp_namespace = "ScrumApi";
+
+package utopia.scrum;
+
+service ProductBacklogItemService {
+  rpc List (ListProductBacklogItemsRequest) returns (ListProductBacklogItemsResponse)
+  {
+	  option (google.api.http) = {
+		get: "/productbacklogitem/list"
+    };
+  };
+}
+
+message ListProductBacklogItemsRequest {
+	string filter = 1;
+	bool include_depends_on = 2;
+	bool include_sbis = 3;
+}
+
+enum PbiStatus {
+	PBI_STATUS_NONE = 0;
+	PBI_STATUS_READY = 1;
+	PBI_STATUS_DONE = 2;
+}
+
+message ProductBacklogItem
+{
+	string id = 1;
+	string name = 2;
+	PbiStatus status = 3;
+	string sprint_name = 4;
+	string product_name = 5;
+	float estimation_points = 6;
+	google.type.Date delivery_date = 7;
+	int32 value = 8;
+	int32 roi = 9;
+	repeated SprintBacklogItemShort sprint_backlog_items = 10;
+	repeated ProductBacklogItemShort dependent_on = 11;
+	bool was_missing = 12;
+}
+
+message SprintBacklogItemShort {
+	string id = 1;
+	string name = 2;
+	SbiStatus status = 3;
+}
+
+message ProductBacklogItemShort {
+	string id = 1;
+	string name = 2;
+	PbiStatus status = 3;
+}
+message ListProductBacklogItemsResponse {
+  repeated ProductBacklogItem product_backlog_items = 1;
+}

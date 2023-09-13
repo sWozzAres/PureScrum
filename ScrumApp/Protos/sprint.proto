@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "ScrumApi";
+
+package utopia.scrum;
+
+service SprintService {
+  rpc List (ListSprintsRequest) returns (ListSprintsResponse);
+}
+
+message ListSprintsRequest {
+}
+
+message SprintShort
+{
+	string id = 1;
+	string name = 2;
+	google.protobuf.Timestamp expectedDeliveryDate = 3;
+	bool expectedDeliveryDateIsValid = 4;
+	int32 status = 5;
+}
+
+message ListSprintsResponse {
+  repeated SprintShort sprints = 1;
+}
