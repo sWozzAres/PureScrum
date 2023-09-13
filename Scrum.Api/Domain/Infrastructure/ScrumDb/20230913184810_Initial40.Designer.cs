@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scrum.Api.Domain.Infrastructure;
 
@@ -11,9 +12,11 @@ using Scrum.Api.Domain.Infrastructure;
 namespace Scrum.Api.Domain.Infrastructure.ScrumDb
 {
     [DbContext(typeof(ScrumDbContext))]
-    partial class ScrumDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230913184810_Initial40")]
+    partial class Initial40
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -397,7 +400,7 @@ namespace Scrum.Api.Domain.Infrastructure.ScrumDb
 
                     b.HasIndex("ChildId");
 
-                    b.ToTable("SprintBacklogItemDependencies", (string)null);
+                    b.ToTable("SprintBacklogItemDependencies");
                 });
 
             modelBuilder.Entity("ProductBacklogItemDependencies", b =>

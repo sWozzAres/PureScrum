@@ -131,7 +131,7 @@ namespace Scrum.Api.Domain.Configuration
                     r => r.HasOne(e => e.Child).WithMany().HasForeignKey(e => e.ChildId),
                     j =>
                     {
-                        //j.ToTable("ProductBacklogItemDependencies", x => x.IsTemporal());
+                        j.ToTable("ProductBacklogItemDependencies", x => x.IsTemporal());
                         j.HasKey(e => new { e.ParentId, e.ChildId });
                     }
                 );
