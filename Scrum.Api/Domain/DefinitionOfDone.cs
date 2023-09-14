@@ -18,7 +18,7 @@ namespace Scrum.Api.Domain.Configuration
     {
         public void Configure(EntityTypeBuilder<DefinitionOfDone> builder)
         {
-            builder.ToTable("DefinitionOfDones", t => t.IsTemporal());
+            builder.ToTable("DefinitionsOfDone", t => t.IsTemporal());
         }
     }
 }

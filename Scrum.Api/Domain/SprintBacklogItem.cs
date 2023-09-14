@@ -56,14 +56,14 @@ namespace Scrum.Api.Domain.Configuration
 {
     internal class SprintBacklogItemEntityTypeConfiguration : IEntityTypeConfiguration<SprintBacklogItem>
     {
-        public const string UQ_SprintBacklogItems_Name = "UQ_SprintBacklogItems_Name";
+        public const string UQ_SprintBacklogItems_ProductBacklogItemId_Name = "UQ_SprintBacklogItems_ProductBacklogItemId_Name";
         public const string FK_SprintBacklogItems_ProductBacklogItems_ProductBacklogItemsId = "FK_SprintBacklogItems_ProductBacklogItems_ProductBacklogItemsId";
         public void Configure(EntityTypeBuilder<SprintBacklogItem> builder)
         {
             builder.ToTable("SprintBacklogItems", t => t.IsTemporal());
 
             builder.HasIndex(e => new { e.ProductBacklogItemId, e.Name })
-                .HasDatabaseName(UQ_SprintBacklogItems_Name)
+                .HasDatabaseName(UQ_SprintBacklogItems_ProductBacklogItemId_Name)
                 .IsUnique();
 
             builder.HasOne(e => e.ProductBacklogItem)

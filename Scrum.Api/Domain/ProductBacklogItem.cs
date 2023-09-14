@@ -102,6 +102,8 @@ namespace Scrum.Api.Domain.Configuration
     {
         public const string UQ_ProductBacklogItems_ProductId_Name = "UQ_ProductBacklogItems_ProductId_Name";
         public const string FK_ProductBacklogItems_Products_ProductId = "FK_ProductBacklogItems_Products_ProductId";
+        public const string FK_ProductBacklogItems_Sprints_SprintId = "FK_ProductBacklogItems_Sprint_SprintId";
+
         public void Configure(EntityTypeBuilder<ProductBacklogItem> builder)
         {
             builder.ToTable("ProductBacklogItems", t => t.IsTemporal());
@@ -115,13 +117,14 @@ namespace Scrum.Api.Domain.Configuration
                 .HasForeignKey(e => e.SprintId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull)
-                .HasConstraintName(FK_ProductBacklogItems_Products_ProductId);
+                .HasConstraintName(FK_ProductBacklogItems_Sprints_SprintId);
 
             builder.HasOne(e => e.Product)
                 .WithMany(e => e.BacklogItems)
                 .HasForeignKey(e => e.ProductId)
                 .IsRequired(true)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName(FK_ProductBacklogItems_Products_ProductId);
 
             builder.HasMany(e => e.Parents)
                 .WithMany(e => e.Children)

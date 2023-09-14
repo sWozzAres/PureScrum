@@ -2,7 +2,7 @@
 
 namespace ScrumApp.Extensions;
 
-public static class DtoExtensions
+public static class UrlHelpers
 {
     public static string Url(this ProductListShortDto dto) => $"/product/view/{dto.Id}";
     public static string Url(this ScrumApi.ProductShort dto) => $"/product/view/{dto.Id}";

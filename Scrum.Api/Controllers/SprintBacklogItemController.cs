@@ -30,7 +30,7 @@ public class SprintBacklogItemController(ScrumDbContext dbContext) : ControllerB
             return CreatedAtAction(nameof(GetSprintBacklogItem), new { id = increment.Id }, new { id = increment.Id });
         }
         catch (DbUpdateException dbe)
-            when (dbe.InnerException is SqlException se && se.Message.Contains(SprintBacklogItemEntityTypeConfiguration.UQ_SprintBacklogItems_Name))
+            when (dbe.InnerException is SqlException se && se.Message.Contains(SprintBacklogItemEntityTypeConfiguration.UQ_SprintBacklogItems_ProductBacklogItemId_Name))
         {
             throw DuplicateNameException(request.Name);
         }
@@ -51,7 +51,7 @@ public class SprintBacklogItemController(ScrumDbContext dbContext) : ControllerB
                 await dbContext.SaveChangesAsync(ct);
             }
             catch (DbUpdateException dbe)
-                when (dbe.InnerException is SqlException se && se.Message.Contains(SprintBacklogItemEntityTypeConfiguration.UQ_SprintBacklogItems_Name))
+                when (dbe.InnerException is SqlException se && se.Message.Contains(SprintBacklogItemEntityTypeConfiguration.UQ_SprintBacklogItems_ProductBacklogItemId_Name))
             {
                 throw DuplicateNameException(request.Name!);
             }
