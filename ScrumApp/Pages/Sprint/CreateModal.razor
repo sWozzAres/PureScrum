@@ -26,7 +26,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateSprintRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateSprintRequest>.GetCreateModel? OnLoad { get; set; }
+    [Parameter] public Func<CreateSprintRequest>? OnLoad { get; set; }
 
     CreateFormTemplateDialog<CreateSprintRequest> form = null!;
 

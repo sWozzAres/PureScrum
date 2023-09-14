@@ -99,7 +99,7 @@ else if (sortedItems is not null)
                     @foreach (var item in orderedItems)
                     {
                         var className = string.Join(" ",
-                        circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                        circularDependencies.Any(chain => chain.Contains(item.Id)) ? "table-danger" : "",
                         //item.Status == ProductBacklogItemStatusDto.Done ? "strike" : "",
                         QuickViewId == item.Id ? "table-info" : "",
                         item.WasMissing ? "opaque" : "");
@@ -190,10 +190,9 @@ else if (sortedItems is not null)
 
     //Dictionary<Guid, bool> openIds { get; set; } = null!;
     List<ScrumApi.ProductBacklogItem> sortedItems { get; set; } = null!;
-    List<string> circularDependencies { get; set; } = null!;
+    List<List<string>> circularDependencies { get; set; } = null!;
 
-    public delegate Task<(List<ScrumApi.ProductBacklogItem>, List<string>)> GetItems(bool forceLoad);
-    [Parameter, EditorRequired] public GetItems OnGetItems { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<bool, Task<(List<ScrumApi.ProductBacklogItem>, List<List<string>>)>> OnGetItems { get; set; } = null!;
 
     //ProductBacklogItemFullDto? dto;
     string? QuickViewId;

@@ -18,7 +18,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateDefinitionOfDoneRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateDefinitionOfDoneRequest>.GetCreateModel? OnLoad { get; set; }
+    [Parameter] public Func<CreateDefinitionOfDoneRequest>? OnLoad { get; set; }
 
     CreateFormTemplateDialog<CreateDefinitionOfDoneRequest> form = null!;
 

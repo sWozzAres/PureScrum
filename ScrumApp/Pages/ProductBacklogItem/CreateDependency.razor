@@ -1,4 +1,5 @@
 ﻿@inject HttpClient Http
+@inject IJSRuntime JS
 @inject ILogger<CreateDependency> Logger
 
 <div class="modal show" style="display:block" tabindex="-1">
@@ -8,7 +9,7 @@
                 <h4 class="modal-title">Create Dependencies</h4>
                 <button type="button" class="btn-close" @onclick="@(() => Close(false))" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" @ref="ModalBodyElement">
                 <div class="mb-3">
                     <div class="d-flex gap-3 align-content-center">
                         @* <label for="name" class="form-label align-self-center">Name</label> *@
@@ -81,6 +82,8 @@
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback OnCreated { get; set; }
 
+    ElementReference? ModalBodyElement;
+
     async Task Close(bool b)
     {
         await OnClose.InvokeAsync(b);
@@ -145,6 +148,14 @@
 
         editContext = new EditContext(findModel);
         messageStore = new ValidationMessageStore(editContext);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("focusFirstInputControl", ModalBodyElement);
+        }
     }
 
     class FindModel

@@ -30,7 +30,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateProductBacklogItemRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateProductBacklogItemRequest>.GetCreateModel? OnGetCreateModel { get; set; }
+    [Parameter] public Func<CreateProductBacklogItemRequest>? OnGetCreateModel { get; set; }
 
     CreateFormTemplateDialog<CreateProductBacklogItemRequest> form = null!;
     ProductListDto[]? products;

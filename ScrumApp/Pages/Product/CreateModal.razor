@@ -20,7 +20,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateProductRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateProductRequest>.GetCreateModel? OnLoad { get; set; }
+    [Parameter] public Func<CreateProductRequest>? OnLoad { get; set; }
 
     CreateFormTemplateDialog<CreateProductRequest> form = null!;
 

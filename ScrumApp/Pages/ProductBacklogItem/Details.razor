@@ -128,8 +128,8 @@
 
 @code {
     [Parameter, EditorRequired] public ProductBacklogItemFullDto Dto { get; set; } = null!;
-    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductBacklogItemRequest>.LoadModel OnLoad { get; set; } = null!;
-    [Parameter, EditorRequired] public EditFormTemplate<UpdateProductBacklogItemRequest>.SaveModel OnSave { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<UpdateProductBacklogItemRequest> OnLoad { get; set; } = null!;
+    [Parameter, EditorRequired] public Func<UpdateProductBacklogItemRequest, Task<HttpResponseMessage>> OnSave { get; set; } = null!;
 
     EditFormTemplate<UpdateProductBacklogItemRequest> form = null!;
 

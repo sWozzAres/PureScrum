@@ -93,8 +93,8 @@ else if (dto is not null)
     }
 
     List<ScrumApi.ProductBacklogItem>? _sortedItems;
-    List<string> _circularDependencies { get; set; } = null!;
-    async Task<(List<ScrumApi.ProductBacklogItem>, List<string>)> GetProductBacklog(bool forceLoad)
+    List<List<string>> _circularDependencies { get; set; } = null!;
+    async Task<(List<ScrumApi.ProductBacklogItem>, List<List<string>>)> GetProductBacklog(bool forceLoad)
     {
         if (_sortedItems is null || _circularDependencies is null || forceLoad)
         {
@@ -105,7 +105,7 @@ else if (dto is not null)
                     IncludeSbis = true
                 })).ProductBacklogItems;
 
-            (_sortedItems, _circularDependencies) = DtoHelpers.TopologicalSort(items);
+            (_sortedItems, _circularDependencies) = TopologicalSort.Sort(items);
         }
         return (_sortedItems, _circularDependencies);
         

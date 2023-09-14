@@ -19,21 +19,41 @@ namespace Scrum.Tests
             var pbi3 = new ProductBacklogItem() { Id = "3" };
             pbi3.DependentOn.Add(new ProductBacklogItemShort() { Id = "1", Name = "1" });
 
+            var pbi4 = new ProductBacklogItem() { Id = "4" };
+
+            var pbi5 = new ProductBacklogItem() { Id = "5" };
+            pbi5.DependentOn.Add(new ProductBacklogItemShort() { Id = "6", Name = "6" });
+
+            var pbi6 = new ProductBacklogItem() { Id = "6" };
+            pbi6.DependentOn.Add(new ProductBacklogItemShort() { Id = "5", Name = "5" });
+
             RepeatedField<ProductBacklogItem> pbis = new()
             {
-                pbi1,
+                pbi2,
                 pbi3,
-                pbi2
+                pbi1,
+                pbi4,
+                pbi5,
+                pbi6,
             };
 
             // Act
-            var (items, circularDependencies) = DtoHelpers.TopologicalSort(pbis);
+            var (items, circularDependencies) = TopologicalSort.Sort(pbis);
 
             // Assert
             Assert.True(items.Count == pbis.Count, "Sort should return all items.");
-            Assert.Single(circularDependencies);
+            Assert.Equal(2, circularDependencies.Count);
+            Assert.Equal(4, circularDependencies[0].Count);
+            Assert.Equal(3, circularDependencies[1].Count);
 
-            Assert.Equal(circularDependencies[0], pbi1.Id);
+            Assert.Equal(circularDependencies[0][0], pbi2.Id);
+            Assert.Equal(circularDependencies[0][1], pbi3.Id);
+            Assert.Equal(circularDependencies[0][2], pbi1.Id);
+            Assert.Equal(circularDependencies[0][3], pbi2.Id);
+
+            Assert.Equal(circularDependencies[1][0], pbi5.Id);
+            Assert.Equal(circularDependencies[1][1], pbi6.Id);
+            Assert.Equal(circularDependencies[1][2], pbi5.Id);
         }
 
         [Fact]
@@ -60,7 +80,7 @@ namespace Scrum.Tests
             };
 
             // Act
-            var (items, _) = DtoHelpers.TopologicalSort(pbis);
+            var (items, _) = TopologicalSort.Sort(pbis);
 
             // Assert
             Assert.True(items.Count == pbis.Count, "Sort should return all items.");

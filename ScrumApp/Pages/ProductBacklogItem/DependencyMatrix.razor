@@ -45,7 +45,7 @@ else if (sortedItems is not null)
                                     item.Missing ? "opaque" : ""); *@
 
                                     var className = string.Join(" ",
-                                    circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                                    circularDependencies.Any(chain => chain.Contains(item.Id)) ? "table-danger" : "",
                                     item.Status == ScrumApi.PbiStatus.Done ? "strike" : "",
                                     item.WasMissing ? "opaque" : "");
 
@@ -92,7 +92,7 @@ else if (sortedItems is not null)
     // List<Guid> circularDependencies = null!;
     RepeatedField<ScrumApi.ProductBacklogItem> items = null!;
     List<ScrumApi.ProductBacklogItem>? sortedItems;
-    List<string> circularDependencies { get; set; } = null!;
+    List<List<string>> circularDependencies { get; set; } = null!;
 
     bool loadFailure;
 
@@ -113,7 +113,7 @@ else if (sortedItems is not null)
                 Status = child.Status
             });
 
-            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            (sortedItems, circularDependencies) = TopologicalSort.Sort(items);
             //await LoadAsync();
         }
     }
@@ -126,7 +126,7 @@ else if (sortedItems is not null)
             var c = p.DependentOn.Single(x => x.Id == child.Id);
             p.DependentOn.Remove(c);
 
-            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            (sortedItems, circularDependencies) = TopologicalSort.Sort(items);
             //await LoadAsync();
         }
     }
@@ -152,7 +152,7 @@ else if (sortedItems is not null)
                     IncludeDependsOn = true,
                 })).ProductBacklogItems;
 
-            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            (sortedItems, circularDependencies) = TopologicalSort.Sort(items);
         }
         catch (Exception ex)
         {

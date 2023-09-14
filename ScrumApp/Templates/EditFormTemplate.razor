@@ -31,12 +31,12 @@
 
 @code {
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
-    public delegate TModel LoadModel();
-    [Parameter, EditorRequired] public LoadModel OnLoad { get; set; } = null!;
-    public delegate Task<HttpResponseMessage> SaveModel(TModel model);
-    [Parameter, EditorRequired] public SaveModel OnSave { get; set; } = null!;
-    public delegate Task<bool> BeginEdit();
-    [Parameter] public BeginEdit? OnBeginEdit { get; set; }
+    //public delegate TModel LoadModel();
+    [Parameter, EditorRequired] public Func<TModel> OnLoad { get; set; } = null!;
+    //public delegate Task<HttpResponseMessage> SaveModel(TModel model);
+    [Parameter, EditorRequired] public Func<TModel, Task<HttpResponseMessage>> OnSave { get; set; } = null!;
+    //public delegate Task<bool> BeginEdit();
+    [Parameter] public Func<Task<bool>>? OnBeginEdit { get; set; }
 
     public TModel Model = null!;
     string originalModel = null!;

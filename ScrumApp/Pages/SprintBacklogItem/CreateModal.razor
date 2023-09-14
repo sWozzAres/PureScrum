@@ -20,7 +20,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateSprintBacklogItemRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateSprintBacklogItemRequest>.GetCreateModel? OnLoad { get; set; }
+    [Parameter] public Func<CreateSprintBacklogItemRequest>? OnLoad { get; set; }
 
     CreateFormTemplateDialog<CreateSprintBacklogItemRequest> form = null!;
 

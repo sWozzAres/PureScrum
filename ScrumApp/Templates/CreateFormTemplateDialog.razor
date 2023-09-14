@@ -36,10 +36,10 @@
 
 @code {
     [Parameter, EditorRequired] public RenderFragment ChildContent { get; set; } = null!;
-    public delegate TModel GetCreateModel();
-    [Parameter, EditorRequired] public GetCreateModel? OnGetCreateModel { get; set; }
-    public delegate Task<HttpResponseMessage> SaveModel(TModel model);
-    [Parameter, EditorRequired] public SaveModel OnSave { get; set; } = null!;
+    //public delegate TModel GetCreateModel();
+    [Parameter, EditorRequired] public Func<TModel>? OnGetCreateModel { get; set; }
+    //public delegate Task<HttpResponseMessage> SaveModel(TModel model);
+    [Parameter, EditorRequired] public Func<TModel, Task<HttpResponseMessage>> OnSave { get; set; } = null!;
     [Parameter] public EventCallback<CreatedEventArgs<TModel>> OnCreated { get; set; }
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     public async Task Close(bool value) => await OnClose.InvokeAsync(value);

@@ -42,7 +42,7 @@ else if (sortedItems is not null)
                                 @foreach (var item in sortedItems)
                                 {
                                     var className = string.Join(" ",
-                                        circularDependencies.Any(c => c == item.Id) ? "table-danger" : "",
+                                        circularDependencies.Any(chain => chain.Contains(item.Id)) ? "table-danger" : "",
                                         item.WasMissing ? "opaque" : "");
 
                                     <tr class="@className" @key="item">
@@ -86,7 +86,7 @@ else if (sortedItems is not null)
 
 @code {
     List<ScrumApi.ProductBacklogItem>? sortedItems;
-    List<string> circularDependencies { get; set; } = null!;
+    List<List<string>> circularDependencies { get; set; } = null!;
 
     string? deleteFailedMsg;
     bool loadFailure;
@@ -130,7 +130,7 @@ else if (sortedItems is not null)
                     IncludeDependsOn = true,
                 })).ProductBacklogItems;
 
-            (sortedItems, circularDependencies) = DtoHelpers.TopologicalSort(items);
+            (sortedItems, circularDependencies) = TopologicalSort.Sort(items);
         }
         catch (Exception ex)
         {

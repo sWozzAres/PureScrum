@@ -27,7 +27,7 @@
 @code {
     [Parameter, EditorRequired] public EventCallback<bool> OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<CreatedEventArgs<CreateImpedimentRequest>> OnCreated { get; set; }
-    [Parameter] public CreateFormTemplateDialog<CreateImpedimentRequest>.GetCreateModel? OnLoad { get; set; }
+    [Parameter] public Func<CreateImpedimentRequest>? OnLoad { get; set; }
 
     CreateFormTemplateDialog<CreateImpedimentRequest> form = null!;
 

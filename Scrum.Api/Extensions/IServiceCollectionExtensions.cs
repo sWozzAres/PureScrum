@@ -45,7 +45,7 @@ public static class IServiceCollectionExtensions
         // dbcontext
         services.AddDbContext<ScrumDbContext>(options =>
         {
-            options.LogTo(Console.WriteLine, LogLevel.Information);
+            //options.LogTo(Console.WriteLine, LogLevel.Information);
             options.EnableSensitiveDataLogging();
 
             options.UseSqlServer(connectionString, sqlOptions =>
