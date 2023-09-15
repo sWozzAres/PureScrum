@@ -71,13 +71,13 @@ namespace Scrum.Tests
 
             var pbi4 = new ProductBacklogItem() { Id = "4" };
 
-            RepeatedField<ProductBacklogItem> pbis = new()
-            {
+            RepeatedField<ProductBacklogItem> pbis =
+            [
                 pbi1,
                 pbi4,
                 pbi3,
                 pbi2
-            };
+            ];
 
             // Act
             var (items, _) = TopologicalSort.Sort(pbis);
