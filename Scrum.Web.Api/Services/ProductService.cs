@@ -28,7 +28,7 @@ public class ProductService(ScrumDbContext dbContext) : ProductServiceBase
     }
 
     public override Task<CreateResponse> Create(
-        CreateRequest request, 
+        CreateRequest request,
         ServerCallContext context)
     {
         return base.Create(request, context);

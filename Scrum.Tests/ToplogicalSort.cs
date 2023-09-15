@@ -27,15 +27,15 @@ namespace Scrum.Tests
             var pbi6 = new ProductBacklogItem() { Id = "6" };
             pbi6.DependentOn.Add(new ProductBacklogItemShort() { Id = "5", Name = "5" });
 
-            RepeatedField<ProductBacklogItem> pbis = new()
-            {
+            RepeatedField<ProductBacklogItem> pbis =
+            [
                 pbi2,
                 pbi3,
                 pbi1,
                 pbi4,
                 pbi5,
                 pbi6,
-            };
+            ];
 
             // Act
             var (items, circularDependencies) = TopologicalSort.Sort(pbis);

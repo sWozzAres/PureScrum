@@ -171,7 +171,7 @@ public class SprintController(ScrumDbContext dbContext, ILogger<SprintController
         logger.LogDebug("Found burndown data in the cache. Key '{key}'.", key);
         return Ok(entries);
 
-        void ParseUtcDateOrThrow(string utcDateString, out DateTime utcDate)
+        static void ParseUtcDateOrThrow(string utcDateString, out DateTime utcDate)
         {
             if (!DateTime.TryParse(utcDateString, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal, out utcDate))
                 throw new ArgumentException("Invalid date parameter.", nameof(utcDateString));

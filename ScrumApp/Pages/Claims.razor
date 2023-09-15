@@ -1,7 +1,9 @@
 ﻿@page "/claims"
 @using System.IdentityModel.Tokens.Jwt
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+@using System.Security.Claims;
 @inject IAccessTokenProvider TokenProvider
+@inject HttpClient Http
 
 <PageTitle>Claims</PageTitle>
 
@@ -48,6 +50,16 @@
                     </ul>
                 </div>
             }
+            @if (webApiClaims is not null)
+            {
+                <h4>Web API Claims</h4>
+                <ul>
+                    @foreach (var c in webApiClaims)
+                    {
+                        <li><strong>@c.Type: </strong>@c.Value</li>
+                    }
+                </ul>
+            }
         </Authorized>
         <NotAuthorized>
             <p>I'm sorry, I can't display anything until you log in</p>
@@ -56,9 +68,9 @@
 </section>
 
 @code {
-    public string AccessToken { get; set; } = string.Empty;
-
-    private JwtSecurityToken? _jwtSecurityToken;
+    string AccessToken { get; set; } = string.Empty;
+    JwtSecurityToken? _jwtSecurityToken;
+    IEnumerable<ApiClaim>? webApiClaims = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -71,5 +83,9 @@
             var handler = new JwtSecurityTokenHandler();
             _jwtSecurityToken = handler.ReadJwtToken(AccessToken);
         }
+
+        webApiClaims = await Http.GetFromJsonAsync<List<ApiClaim>>("/api/data/info");
     }
+
+    record ApiClaim(string Type, string Value);
 }

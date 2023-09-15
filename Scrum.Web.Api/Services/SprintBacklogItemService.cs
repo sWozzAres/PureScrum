@@ -10,7 +10,7 @@ namespace Scrum.Web.Api.Services;
 [Authorize(Policy = "ClientPolicy")]
 public class SprintBacklogItemService(ScrumDbContext dbContext) : SprintBacklogItemServiceBase
 {
-    
+
     public override async Task<ListSprintBacklogItemsResponse> List(ListSprintBacklogItemsRequest request, ServerCallContext context)
     {
         var query = from p in dbContext.SprintBacklogItems.AsNoTracking()

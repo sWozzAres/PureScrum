@@ -26,4 +26,16 @@ public class DataController(ScrumDbContext dbContext) : ControllerBase
 
         return Ok(result);
     }
+
+    //TODO remove
+    [HttpGet]
+    [Route("info")]
+    public IActionResult GetInfo(IHttpContextAccessor a)//(ClaimsPrincipal claimsPrincipal)
+    {
+        var result = a.HttpContext?.User.Claims.Select(x => new ApiClaim(x.Type, x.Value));
+        return Ok(result);
+    }
+
+    record ApiClaim(string Type, string Value);
 }
+

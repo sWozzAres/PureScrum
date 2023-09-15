@@ -3,7 +3,10 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Scrum.Web.Blazor.Services;
 
-public class CachedHandler(IMemoryCache cache, ILogger<CachedHandler> logger) : DelegatingHandler
+/// <summary>
+/// Caches the request in memory.
+/// </summary>
+public class InMemoryCacheHandler(IMemoryCache cache, ILogger<InMemoryCacheHandler> logger) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -17,7 +20,7 @@ public class CachedHandler(IMemoryCache cache, ILogger<CachedHandler> logger) : 
         var key = request.RequestUri.ToString();
 
         var cached = cache.Get<string>(key);
-        if (cached != null)
+        if (cached is not null)
         {
             logger.LogInformation("Getting resource from cache.");
             return new HttpResponseMessage(HttpStatusCode.OK)
@@ -30,7 +33,7 @@ public class CachedHandler(IMemoryCache cache, ILogger<CachedHandler> logger) : 
         var response = await base.SendAsync(request, cancellationToken);
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        cache.Set<string>(key, content, TimeSpan.FromDays(1));
+        cache.Set(key, content, TimeSpan.FromDays(1));
 
         return response;
     }

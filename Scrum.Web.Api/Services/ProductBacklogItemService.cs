@@ -12,7 +12,7 @@ namespace Scrum.Web.Api.Services;
 [Authorize(Policy = "ClientPolicy")]
 public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<ProductBacklogItemService> logger) : ProductBacklogItemServiceBase
 {
-    static readonly string[] ValidListFilters = new string[] { "ProductId", "SprintId", "ActiveOnly" };
+    static readonly string[] ValidListFilters = ["ProductId", "SprintId", "ActiveOnly"];
 
     public override async Task<ListProductBacklogItemsResponse> List(ListProductBacklogItemsRequest request, ServerCallContext context)
     {
@@ -92,7 +92,7 @@ public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<Product
 
         var result = await query.ToListAsync(context.CancellationToken);
 
-        List<Guid> allMissing = new();
+        List<Guid> allMissing = [];
 
         // load all pbis that are depended on, but not included in the original query
         if (request.IncludeDependsOn)

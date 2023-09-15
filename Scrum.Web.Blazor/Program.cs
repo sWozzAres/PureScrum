@@ -1,12 +1,9 @@
-using System.Net;
-using Google.Api;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Web;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 using Scrum.Web.Blazor.Services;
 using ScrumApp;
 using ScrumApp.Services;
@@ -16,32 +13,24 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped<CachedHandler>();
+builder.Services.AddScoped<InMemoryCacheHandler>();
 builder.Services.AddScoped<BrowserCachedHandler>();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<ITokenProvider, AppTokenProvider>();
 
-builder.Services.AddHttpClient("CachedClient", client => client.BaseAddress = new Uri("https://localhost:7195"))
-    .AddHttpMessageHandler(sp => sp.GetRequiredService<CachedHandler>());
-
-builder.Services.AddHttpClient("BrowserCachedClient", client => client.BaseAddress = new Uri("https://localhost:7195"))
-    .AddHttpMessageHandler(sp => sp.GetRequiredService<BrowserCachedHandler>());
-
 var authorizedUrls = new[] { "https://localhost:7195" };
 var scopes = new[] { "purescrum.client" };
 
-//builder.Services
-//    .AddGrpcClient<ScrumApi.ProductService.ProductServiceClient>(o =>
-//    {
-//        o.Address = new Uri("https://localhost:5001");
-//    })
-//    .AddCallCredentials(async (context, metadata, serviceProvider) =>
-//    {
-//        var provider = serviceProvider.GetRequiredService<ITokenProvider>();
-//        var token = await provider.GetTokenAsync(context.CancellationToken);
-//        metadata.Add("Authorization", $"Bearer {token}");
-//    });
+builder.Services.AddHttpClient("CachedClient", client => client.BaseAddress = new Uri("https://localhost:7195"))
+    .AddHttpMessageHandler(sp => sp.GetRequiredService<InMemoryCacheHandler>())
+    .AddHttpMessageHandler(sp => sp.GetRequiredService<AuthorizationMessageHandler>()
+    .ConfigureHandler(authorizedUrls, scopes));
+
+builder.Services.AddHttpClient("BrowserCachedClient", client => client.BaseAddress = new Uri("https://localhost:7195"))
+    .AddHttpMessageHandler(sp => sp.GetRequiredService<BrowserCachedHandler>())
+    .AddHttpMessageHandler(sp => sp.GetRequiredService<AuthorizationMessageHandler>()
+    .ConfigureHandler(authorizedUrls, scopes));
 
 builder.Services.AddScoped(services =>
 {
@@ -62,7 +51,6 @@ builder.Services.AddScoped(services =>
 
     return client;
 });
-
 builder.Services.AddScoped(services =>
 {
     var credentials = CallCredentials.FromInterceptor(async (context, metadata) =>
@@ -95,7 +83,6 @@ builder.Services.AddScoped(services =>
             HttpClient = new HttpClient(new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler()))
         }));
 });
-
 builder.Services.AddScoped(services =>
 {
     var credentials = CallCredentials.FromInterceptor(async (context, metadata) =>
@@ -112,8 +99,6 @@ builder.Services.AddScoped(services =>
                 HttpClient = new HttpClient(new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler()))
             }));
 });
-
-
 
 builder.Services.AddHttpClient("WebAPI", client => client.BaseAddress = new Uri("https://localhost:7195"))
     .AddHttpMessageHandler(sp => sp.GetRequiredService<AuthorizationMessageHandler>()

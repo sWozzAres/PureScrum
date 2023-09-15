@@ -8,7 +8,7 @@ public class DateComparer : IComparer<Google.Type.Date>
     {
         if (x == null && y == null)
         {
-            return 0; 
+            return 0;
         }
         else if (x == null)
         {
@@ -16,7 +16,7 @@ public class DateComparer : IComparer<Google.Type.Date>
         }
         else if (y == null)
         {
-            return 1; 
+            return 1;
         }
         else
         {

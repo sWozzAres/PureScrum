@@ -233,7 +233,8 @@ namespace Identity.API
                     AlwaysIncludeUserClaimsInIdToken = true,
 
                     RedirectUris = { $"{clientsUrl["ScrumClient"]}/authentication/login-callback" },
-                    PostLogoutRedirectUris = { $"{clientsUrl["ScrumClient"]}/" }
+                    PostLogoutRedirectUris = { $"{clientsUrl["ScrumClient"]}/" },
+
                 }
             };
         }
