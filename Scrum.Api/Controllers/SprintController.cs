@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
@@ -8,7 +9,7 @@ using Scrum.Api.Domain.Configuration;
 using Scrum.Api.Exceptions;
 
 namespace Scrum.Api.Controllers;
-
+[Authorize(Policy = "ClientPolicy")]
 [Route("api/[controller]")]
 [ApiController]
 public class SprintController(ScrumDbContext dbContext, ILogger<SprintController> logger) : ControllerBase

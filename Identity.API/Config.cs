@@ -65,7 +65,9 @@ namespace Identity.API
                 new ApiScope("utopia.write", "Write Utopia"),
 
                 new ApiScope("vms.admin", "Vms Admin", new [] { "tenantid" }),
-                new ApiScope("vms.client", "Vms Client", new [] { "tenantid" })
+                new ApiScope("vms.client", "Vms Client", new [] { "tenantid" }),
+
+                new ApiScope("purescrum.client", "PureScrum Client")
             };
 
         /// <summary>
@@ -95,7 +97,13 @@ namespace Identity.API
                     UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "tenantid" }
                 },
                     // name and human-friendly name of our API
-                new ApiResource("reactdotnetapi", "React DotNet API")
+                new ApiResource("reactdotnetapi", "React DotNet API"),
+
+                 new ApiResource("purescrumclient", "PureScrum Client Service")
+                {
+                    Scopes = { "purescrum.client" },
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "tenantid" }
+                },
                 //new ApiResource("invoice", "Invoice API")
                 //{
                 //    Scopes = { "invoice.read", "invoice.pay", "manage" }
@@ -196,6 +204,36 @@ namespace Identity.API
 
                     RedirectUris = { $"{clientsUrl["Client"]}/authentication/login-callback" },
                     PostLogoutRedirectUris = { $"{clientsUrl["Client"]}/" }
+                },
+                new Client
+                {
+                    // unique name for the application
+                    ClientId = "purescrumclient",
+
+                    // Authorization Code grant type and require PKCE
+                    // http://docs.identityserver.io/en/latest/topics/grant_types.html
+                    AllowedGrantTypes = GrantTypes.Code,
+                    RequirePkce = true,
+
+                    // turn off secret for public client
+                    RequireClientSecret = false,
+
+                    // whitelisted URL in CORS
+                    AllowedCorsOrigins = { $"{clientsUrl["ScrumClient"]}" },
+
+                    // enabling openid and profile as scopes, in order to allow the execution of the OpenID Connect flow 
+                    // and retrieve the profile of the user in the ID Token
+                    AllowedScopes = {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.Email,
+                        "purescrum.client"
+                    },
+
+                    AlwaysIncludeUserClaimsInIdToken = true,
+
+                    RedirectUris = { $"{clientsUrl["ScrumClient"]}/authentication/login-callback" },
+                    PostLogoutRedirectUris = { $"{clientsUrl["ScrumClient"]}/" }
                 }
             };
         }

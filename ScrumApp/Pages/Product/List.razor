@@ -4,6 +4,7 @@
 @inject ILogger<List> Logger
 @inject TabService TabService
 @inject ScrumApi.ProductService.ProductServiceClient Client
+@inject IAccessTokenProvider TokenProvider
 
 <PageTitle>Products</PageTitle>
 
@@ -98,6 +99,10 @@ else if (products is not null)
         //     Logger.LogCritical(rex.Status.DebugException, "Failed to load products over RPC. {m}", rex.Status.DebugException.Message);
 
         //     loadFailure = true;
+        // }
+        // catch (AccessTokenNotAvailableException ex)
+        // {
+        //     ex.Redirect();
         // }
         catch (Exception ex)
         {

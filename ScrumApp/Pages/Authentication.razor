@@ -1,0 +1,78 @@
+﻿@page "/authentication/{action}"
+@inject ILogger<Authentication> Logger
+@inject HttpClient Http
+@attribute [AllowAnonymous]
+@* @inject HubConnection HubConnection  *@
+
+<div class="page page-message">
+    <RemoteAuthenticatorView @ref="authenticator" Action="@Action" OnLogInSucceeded="LoginSucceeded">
+        <CompletingLoggingIn>
+            <p>Completing Logging In</p>
+        </CompletingLoggingIn>
+        <CompletingLogOut>
+            <p>Completing Log Out</p>
+        </CompletingLogOut>
+        <LoggingIn>
+            <p>Logging In</p>
+        </LoggingIn>
+        <LogInFailed>
+            <p>Login failed. Reason: @context</p>
+        </LogInFailed>
+        <LogOut>
+            <p>Logout from the application</p>
+        </LogOut>
+        <LogOutFailed>
+            <p>Logout failed. Reason: @context</p>
+        </LogOutFailed>
+        <LogOutSucceeded>
+            <p>Logout succeeded</p>
+        </LogOutSucceeded>
+        <Registering>
+            <p>Registering</p>
+        </Registering>
+        <UserProfile>
+            <p>User Profile is loaded....</p>
+        </UserProfile>
+    </RemoteAuthenticatorView>
+</div>
+@code {
+    [Parameter] public string? Action { get; set; }
+    RemoteAuthenticatorView authenticator = null!;
+
+    void LoginSucceeded()
+    {
+        Logger.LogInformation("Login succeeded.");
+
+        //await StartSignalR();
+        //await RegisterLogin();
+    }
+
+    // async Task RegisterLogin()
+    // {
+    //     try
+    //     {
+    //         var response = PostResponse.Create(await Http.PostAsJsonAsync($"api/app/register", new { }));
+    //         if (response is not PostResponse.Success)
+    //         {
+    //             throw new InvalidOperationException("Register login was unsuccesfull.");
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Logger.LogWarning(ex, "Failed to register login.");
+    //         //TODO logout
+    //     }
+    // }
+
+    // async Task StartSignalR()
+    // {
+    //     try
+    //     {
+    //         await HubConnection.StartAsync();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Logger.LogError(ex, "Failed to start the signalR connection.");
+    //     }
+    // }
+}

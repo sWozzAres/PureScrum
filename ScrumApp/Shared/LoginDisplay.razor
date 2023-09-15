@@ -1,0 +1,34 @@
+﻿@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        <ul class="topbar-menu d-flex align-items-center gap-3">
+            <li>
+                <a href="authentication/profile" class="nav-link">Hello, @context.User.Identity?.Name!</a>
+            </li>
+            <li>
+                <a href="/claims" class="nav-link">Claims</a>
+            </li>
+            <li>
+                <button class="nav-link btn btn-link" @onclick="BeginLogOut">Log out</button>
+            </li>
+        </ul>
+    </Authorized>
+    <NotAuthorized>
+        <ul class="topbar-menu d-flex align-items-center gap-3">
+            <li>
+                <a href="authentication/register" class="nav-link">Register</a>
+            </li>
+            <li>
+                <a href="authentication/login" class="nav-link">Log in</a>
+            </li>
+        </ul>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+}

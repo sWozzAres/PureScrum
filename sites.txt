@@ -1,0 +1,4 @@
+5000	Identity.API
+5001	GRPC API
+7195	Web API
+7289	WebAssembly Client

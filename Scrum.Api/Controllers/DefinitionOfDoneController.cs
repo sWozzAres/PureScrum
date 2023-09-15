@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Scrum.Api.Application.Queries;
 using Scrum.Api.Exceptions;
 
 namespace Scrum.Api.Controllers;
-
+[Authorize(Policy = "ClientPolicy")]
 [Route("api/[controller]")]
 [ApiController]
 public class DefinitionOfDoneController(ScrumDbContext dbContext) : ControllerBase

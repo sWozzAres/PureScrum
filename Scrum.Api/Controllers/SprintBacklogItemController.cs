@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Scrum.Api.Application.Commands.SprintBacklogItemUseCase;
 using Scrum.Api.Application.Commands.SprintUseCase;
@@ -7,7 +8,7 @@ using Scrum.Api.Domain.Configuration;
 using Scrum.Api.Exceptions;
 
 namespace Scrum.Api.Controllers;
-
+[Authorize(Policy = "ClientPolicy")]
 [Route("api/[controller]")]
 [ApiController]
 public class SprintBacklogItemController(ScrumDbContext dbContext) : ControllerBase

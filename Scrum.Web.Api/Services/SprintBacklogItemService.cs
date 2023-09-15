@@ -1,4 +1,5 @@
 ﻿using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Scrum.Api.Domain.Infrastructure;
 using ScrumApi;
@@ -6,8 +7,10 @@ using static ScrumApi.SprintBacklogItemService;
 
 namespace Scrum.Web.Api.Services;
 
+[Authorize(Policy = "ClientPolicy")]
 public class SprintBacklogItemService(ScrumDbContext dbContext) : SprintBacklogItemServiceBase
 {
+    
     public override async Task<ListSprintBacklogItemsResponse> List(ListSprintBacklogItemsRequest request, ServerCallContext context)
     {
         var query = from p in dbContext.SprintBacklogItems.AsNoTracking()

@@ -15,7 +15,8 @@ namespace Identity.API.Data
             var clientUrls = new Dictionary<string, string>
             {
                 { "Admin", configuration.GetValue<string>("VmsAdmin") },
-                { "Client", configuration.GetValue<string>("VmsClient") }
+                { "Client", configuration.GetValue<string>("VmsClient") },
+                { "ScrumClient", configuration.GetValue<string>("ScrumClient") },
             };
 
             if (!context.Clients.Any())

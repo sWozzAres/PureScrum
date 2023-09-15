@@ -1,7 +1,12 @@
-﻿@using Markdig
+﻿@attribute [Authorize]
+
+@using Markdig
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using Microsoft.Extensions.Logging
 @using Microsoft.JSInterop
 @using Google.Protobuf.Collections

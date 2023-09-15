@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Scrum.Api.Application.Commands.ProductUseCase;
 using Scrum.Api.Application.Queries;
@@ -6,7 +7,7 @@ using Scrum.Api.Domain.Configuration;
 using Scrum.Api.Exceptions;
 
 namespace Scrum.Api.Controllers;
-
+[Authorize(Policy = "ClientPolicy")]
 [Route("api/[controller]")]
 [ApiController]
 public class ProductController(ScrumDbContext dbContext, ILogger<ProductController> logger) : ControllerBase

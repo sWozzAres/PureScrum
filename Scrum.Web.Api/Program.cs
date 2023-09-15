@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Scrum.Api.Domain.Infrastructure;
 using Scrum.Api.Extensions;
+using Scrum.Web.Api.Configuration;
 using Scrum.Web.Api.Extensions;
 using Scrum.Web.Api.Identity;
 using Scrum.Web.Api.Infrastructure;
@@ -79,6 +80,8 @@ namespace Scrum.Web.Api
                 builder.Configuration.GetConnectionString("ScrumDbConnection")
                     ?? throw new InvalidOperationException("Failed to load connection string ScrumDbConnection."));
 
+            builder.Services.AddApplicationSecurity();
+
             builder.Services.AddControllers()
                 .AddApplicationPart(typeof(Scrum.Api.Controllers.ProductController).GetTypeInfo().Assembly);
 
@@ -120,17 +123,20 @@ namespace Scrum.Web.Api
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
+            app.UseCors(CorsPolicy);
+            app.UseAuthorization();
+
+
+
             app.UseGrpcWeb();
 
-            app.UseCors(CorsPolicy);
+
 
             app.MapGrpcService<ProductService>().EnableGrpcWeb();
             app.MapGrpcService<ProductBacklogItemService>().EnableGrpcWeb();
             app.MapGrpcService<SprintService>().EnableGrpcWeb();
             app.MapGrpcService<SprintBacklogItemService>().EnableGrpcWeb();
-
-            app.UseAuthorization();
-
 
             app.MapControllers();
 

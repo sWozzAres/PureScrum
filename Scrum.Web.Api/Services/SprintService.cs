@@ -1,5 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Scrum.Api.Domain.Infrastructure;
 using ScrumApi;
@@ -7,6 +8,7 @@ using static ScrumApi.SprintService;
 
 namespace Scrum.Web.Api.Services;
 
+[Authorize(Policy = "ClientPolicy")]
 public class SprintService(ScrumDbContext dbContext) : SprintServiceBase
 {
     public override async Task<ListSprintsResponse> List(ListSprintsRequest request, ServerCallContext context)
