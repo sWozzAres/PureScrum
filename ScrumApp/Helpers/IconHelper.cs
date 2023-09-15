@@ -33,7 +33,4 @@ public static class IconHelper
         { Icon.QuickOpen, "bi-layout-text-sidebar-reverse" },
         { Icon.QuickClose, "bi-x-lg" },
     };
-
-    //public static string ClassNameWith(Icon icon, string additional)
-    //    => string.Join(" ", ClassName[icon], additional);
 }

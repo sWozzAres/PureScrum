@@ -32,7 +32,7 @@ namespace Identity.API
                         //JwtClaimTypes.WebSite,
                         //JwtClaimTypes.Address,
                         //"myclaim1"
-                        "tenantid"
+                        //"tenantid"
                     }),
                 new IdentityResource(IdentityServerConstants.StandardScopes.Email,
                     "Email data",
@@ -102,7 +102,7 @@ namespace Identity.API
                  new ApiResource("purescrumclient", "PureScrum Client Service")
                 {
                     Scopes = { "purescrum.client" },
-                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email, "tenantid" }
+                    UserClaims = { JwtClaimTypes.Name, JwtClaimTypes.Email }
                 },
                 //new ApiResource("invoice", "Invoice API")
                 //{

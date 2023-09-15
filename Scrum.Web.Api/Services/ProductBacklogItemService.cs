@@ -25,8 +25,8 @@ public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<Product
 
         // base query
         var baseQuery = from pbi in dbContext.ProductBacklogItems
-                    .Include(x => x.SprintBacklogItems).AsSplitQuery()
-                    .Include(x => x.Children).AsSplitQuery()
+                            .Include(x => x.SprintBacklogItems).AsSplitQuery()
+                            .Include(x => x.Children).AsSplitQuery()
 
                         join __s in dbContext.Sprints on pbi.SprintId equals __s.Id into _s
                         from s in _s.DefaultIfEmpty()
@@ -100,8 +100,8 @@ public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<Product
             allMissing = await GetAllMissingPbis(result, (missing, cancellationToken) =>
             {
                 var missingPbis = from pbi in dbContext.ProductBacklogItems
-                        .Include(x => x.SprintBacklogItems).AsSplitQuery()
-                        .Include(x => x.Children).AsSplitQuery()
+                                    .Include(x => x.SprintBacklogItems).AsSplitQuery()
+                                    .Include(x => x.Children).AsSplitQuery()
 
                                   join __s in dbContext.Sprints on pbi.SprintId equals __s.Id into _s
                                   from s in _s.DefaultIfEmpty()

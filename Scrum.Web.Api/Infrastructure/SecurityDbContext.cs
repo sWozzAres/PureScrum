@@ -4,9 +4,6 @@ using Scrum.Web.Api.Identity;
 
 namespace Scrum.Web.Api.Infrastructure;
 
-public class SecurityDbContext : IdentityDbContext<ScrumUser>
+public class SecurityDbContext(DbContextOptions<SecurityDbContext> options) : IdentityDbContext<ScrumUser>(options)
 {
-    public SecurityDbContext(DbContextOptions<SecurityDbContext> options) : base(options)
-    {
-    }
 }

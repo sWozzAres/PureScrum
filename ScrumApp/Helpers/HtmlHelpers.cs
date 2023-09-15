@@ -5,7 +5,7 @@ public static class HtmlHelpers
     static readonly Random random = new();
     public static string GetRandomHtmlId(int length = 10)
     {
-        // define the valid characters
+        // valid characters
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
         return new string(Enumerable.Repeat(chars, length)

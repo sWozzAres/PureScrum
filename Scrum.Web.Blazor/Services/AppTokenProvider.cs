@@ -9,7 +9,7 @@ public interface ITokenProvider
 
 public class AppTokenProvider(IAccessTokenProvider tokenProvider) : ITokenProvider
 {
-    string _token = null!;
+    string? _token;
     readonly IAccessTokenProvider _tokenProvider = tokenProvider;
 
     public async Task<string> GetTokenAsync(CancellationToken cancellationToken)
@@ -25,4 +25,6 @@ public class AppTokenProvider(IAccessTokenProvider tokenProvider) : ITokenProvid
 
         return _token;
     }
+
+    public void Reset() => _token = null;
 }

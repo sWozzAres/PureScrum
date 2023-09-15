@@ -4,7 +4,6 @@ namespace ScrumApp.Services;
 
 public abstract partial class PostResponse
 {
-    public int MyProperty { get; set; }
     public void HandlePostFailure(EditContext editContext, ValidationMessageStore messageStore)
     {
         messageStore.Clear();

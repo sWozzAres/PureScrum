@@ -24,9 +24,7 @@ public class RememberService
 
     public void Remember(string key, object value)
     {
-        if (items.ContainsKey(key))
+        if (!items.TryAdd(key, value))
             items[key] = value;
-        else
-            items.Add(key, value);
     }
 }

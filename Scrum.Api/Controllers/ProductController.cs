@@ -20,7 +20,6 @@ public class ProductController(ScrumDbContext dbContext, ILogger<ProductControll
     public async Task<IActionResult> CreateProduct(
         CreateProductRequest request,
         [FromServices] CreateProduct command,
-        //[FromServices] ProductQueries queries,
         CancellationToken ct)
     {
         var product = command.Create(request);
@@ -28,8 +27,6 @@ public class ProductController(ScrumDbContext dbContext, ILogger<ProductControll
         try
         {
             await dbContext.SaveChangesAsync(ct);
-
-            //var result = await queries.GetProductAsync(product.Id, ct);
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, new ProductShortDto(product.Id, product.Name));
         }
@@ -129,31 +126,4 @@ public class ProductController(ScrumDbContext dbContext, ILogger<ProductControll
         [FromServices] ProductBacklogItemQueries queries,
         CancellationToken ct)
     => Ok(await queries.GetProductBacklogItemsAllAsync(null, productId, null, ct));
-
-    /// <summary>
-    /// test
-    /// see filtering https://google.aip.dev/160
-    /// </summary>
-    /// <param name="c"></param>
-    /// <param name="ct"></param>
-    /// <returns></returns>
-    //[HttpGet]
-    //[Route("custom")]
-    //public async Task<IActionResult> GetProductsCustom(
-    //    [FromQuery] string? c,
-    //    CancellationToken ct)
-    //{
-    //    var columns = string.IsNullOrEmpty(c) 
-    //        ? new string[] { "Id" }
-    //        : c.Split(",");
-
-    //    var sql = $"SELECT {string.Join(", ", columns)} " +
-    //        "FROM Products ";
-
-    //    var result = await dbContext.Database.GetDbConnection().QueryAsync(sql);
-
-    //    logger.LogDebug("result {@result}", result);
-
-    //    return Ok(result);
-    //}
 }
