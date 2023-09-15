@@ -1,3 +1,5 @@
+custom-css
+
 add-migration -Name Initial41 -o Domain\Infrastructure\ScrumDb -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
 update-database -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
 remove-migration -Context ScrumDbContext -Project Scrum.Api -StartupProject Scrum.Api
