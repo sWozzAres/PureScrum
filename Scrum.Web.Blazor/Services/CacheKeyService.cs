@@ -13,14 +13,11 @@ public class CacheKeyService
     public string AddOrUpdate(string key)
     {
         var value = ScrumApp.Helpers.HtmlHelpers.RandomCacheKey;
-        if (_cacheKeys.ContainsKey(key))
+        if (!_cacheKeys.TryAdd(key, value))
         {
             _cacheKeys[key] = value;
         }
-        else
-        {
-            _cacheKeys.Add(key, value);
-        }
+
         return value;
     }
     public bool TryGetValue(string key, [MaybeNullWhen(false)] out string value)

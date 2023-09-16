@@ -12,7 +12,7 @@ namespace Scrum.Web.Api.Services;
 [Authorize(Policy = "ClientPolicy")]
 public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<ProductBacklogItemService> logger) : ProductBacklogItemServiceBase
 {
-    static readonly string[] ValidListFilters = ["ProductId", "SprintId", "ActiveOnly"];
+    static readonly string[] ValidListFilters = ["ProductId", "SprintId", "ActiveOnly", "NameFilter"];
 
     public override async Task<ListProductBacklogItemsResponse> List(ListProductBacklogItemsRequest request, ServerCallContext context)
     {
@@ -59,6 +59,11 @@ public class ProductBacklogItemService(ScrumDbContext dbContext, ILogger<Product
 
             if (activeOnlyAsBool)
                 baseQuery = baseQuery.Where(x => x.pbi.Status == Scrum.Api.Domain.PbiStatus.None || x.pbi.Status == Scrum.Api.Domain.PbiStatus.Ready);
+        }
+
+        if (filters.TryGetValue("NameFilter", out string? nameFilter) && !string.IsNullOrEmpty(nameFilter))
+        { 
+            baseQuery = baseQuery.Where(x => x.pbi.Name.StartsWith(nameFilter));
         }
 
         // get anonymous type
