@@ -85,7 +85,7 @@ public static class TopologicalSort
     //    return (sortedIds.Select(id => itemsDictionary[id]).Reverse().ToList(), circularDependencies);
     //}
     public static (List<ScrumApi.ProductBacklogItem> Items, List<List<string>> CircularDependencies) Sort(
-    Google.Protobuf.Collections.RepeatedField<ScrumApi.ProductBacklogItem> items)
+        Google.Protobuf.Collections.RepeatedField<ScrumApi.ProductBacklogItem> items)
     {
         var circularDependencies = new List<List<string>>();
         var itemsDictionary = items.ToDictionary(item => item.Id);
@@ -107,8 +107,10 @@ public static class TopologicalSort
                 }
                 else if (currentlyVisiting.Contains(child.Id))
                 {
-                    var circularChain = new List<string>(currentChain.SkipWhile(id => id != child.Id));
-                    circularChain.Add(child.Id);
+                    var circularChain = new List<string>(currentChain.SkipWhile(id => id != child.Id))
+                    {
+                        child.Id
+                    };
                     circularDependencies.Add(circularChain);
                 }
             }

@@ -15,12 +15,6 @@ and explore the structure of the system.
 3. Caching
 4. Grpc
 
-Due to it's prototype status, the following important
-features are missing...
-
-1. No users
-2. Minimal Bootstrap UI 
-
 Other features...
 
 1. CLEAN architecture
@@ -48,3 +42,4 @@ Notable features...
 * Scrum.Web.Api - the api host, also has experimental GRPC services
 * Scrum.Web.Blazor - the Blazor client host
 * ScrumApp - the Blazor client app
+* Identity.API - development identity server

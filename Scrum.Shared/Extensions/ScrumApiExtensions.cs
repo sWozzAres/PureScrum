@@ -6,7 +6,7 @@ public partial class ProductShort
     public ProductShort(string id, string name) => (Id, Name) = (id, name);
 }
 
-public partial class ProductBacklogItem
+public partial class ProductBacklogItem 
 {
     public bool Checked { get; set; } = false;
     public ProductBacklogItem(string id, string name, int status, string sprintName, string productName, float estimationPoints)

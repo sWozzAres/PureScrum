@@ -83,6 +83,10 @@ namespace Scrum.Api.Domain
         public Guid? SprintId { get; set; } = sprintId;
         public Sprint? Sprint { get; private set; } = null!;
 
+
+        //public DateTime CreatedTimeUtc { get; set; } = DateTime.UtcNow;
+        //public Guid? CreatedBy { get; set; }
+
         public ICollection<ProductBacklogItem> Parents { get; } = new List<ProductBacklogItem>();
         public ICollection<ProductBacklogItem> Children { get; } = new List<ProductBacklogItem>();
 
