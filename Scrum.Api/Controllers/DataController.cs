@@ -36,6 +36,14 @@ public class DataController(ScrumDbContext dbContext) : ControllerBase
         return Ok(result);
     }
 
+    [AllowAnonymous]
+    [HttpGet]
+    [Route("hello")]
+    public IActionResult GetHello(IHttpContextAccessor a)//(ClaimsPrincipal claimsPrincipal)
+    {
+        return Ok("Hello");
+    }
+
     record ApiClaim(string Type, string Value);
 }
 
